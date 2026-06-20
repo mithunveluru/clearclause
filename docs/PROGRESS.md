@@ -6,8 +6,8 @@ Definition of Done is met.
 | Phase | Title | Status | Notes |
 |---|---|---|---|
 | 0 | Product framing | ✅ done | Scope/taxonomy frozen in spec; samples land in Phase 13/15 |
-| 1 | Repo & local infra | 🟡 in progress | Compose + health endpoints + Alembic wired |
-| 2 | Auth & access control | ⬜ todo | |
+| 1 | Repo & local infra | ✅ code done | Runtime `docker compose up` check is user-run |
+| 2 | Auth & access control | ✅ done | JWT + bcrypt; register/login/refresh + /me; security tests pass |
 | 3 | Document ingestion | ⬜ todo | |
 | 4 | OCR pipeline | ⬜ todo | |
 | 5 | Clause segmentation | ⬜ todo | |
@@ -35,6 +35,14 @@ Definition of Done is met.
 - [x] .env.example
 - [ ] DoD: `docker compose up` runs all core services; FE+BE /health respond
       (requires Docker — run locally to confirm)
+
+## Phase 2 checklist
+- [x] `users` model + Alembic migration (0001), email unique index
+- [x] bcrypt password hashing (spec allowed bcrypt or passlib; passlib dropped — unmaintained, breaks on modern bcrypt)
+- [x] JWT access + refresh tokens (HS256)
+- [x] register / login / refresh endpoints + service/repository separation
+- [x] get_current_user dependency + protected /api/v1/me route
+- [x] security unit tests pass (3/3)
 
 ## Deviations from spec (deliberate, ponytail)
 - `docker-compose.yml` at repo root, not `infra/`, so the spec's documented
