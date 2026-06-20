@@ -18,4 +18,5 @@ class Finding(Base, TimestampMixin):
     severity: Mapped[str] = mapped_column(String(20), nullable=False)
     confidence: Mapped[float] = mapped_column(Float, nullable=False)
     explanation: Mapped[str] = mapped_column(Text, nullable=False)
+    impact: Mapped[str | None] = mapped_column(Text, nullable=True)
     action_text: Mapped[str] = mapped_column(Text, nullable=False)

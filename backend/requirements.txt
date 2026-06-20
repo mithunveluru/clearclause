@@ -28,8 +28,9 @@ pdf2image==1.17.0
 Pillow==11.0.0
 pdfplumber==0.11.4
 
-# Reports (Phase 8)
+# Reports (Phase 8 / PDF)
 jinja2==3.1.5
+reportlab==4.2.5
 
 # Observability (Phase 11)
 opentelemetry-sdk==1.29.0

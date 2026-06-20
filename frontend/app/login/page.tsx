@@ -2,7 +2,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Lock } from "lucide-react";
 import { login } from "@/lib/api";
+import { Button } from "@/components/ui/Button";
+import { Logo } from "@/components/ui/Logo";
+import { PageTransition } from "@/components/ui/PageTransition";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,33 +30,50 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto max-w-sm px-6 py-24">
-      <h1 className="mb-6 text-2xl font-bold">Log in</h1>
-      <form onSubmit={submit} className="flex flex-col gap-3">
-        <input
-          type="email" required placeholder="Email" value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="rounded-lg border px-3 py-2"
-        />
-        <input
-          type="password" required placeholder="Password" value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="rounded-lg border px-3 py-2"
-        />
-        {err && <p className="text-sm text-red-600">{err}</p>}
-        <button
-          disabled={busy}
-          className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-        >
-          {busy ? "…" : "Log in"}
-        </button>
-      </form>
-      <p className="mt-4 text-sm text-gray-600">
-        No account?{" "}
-        <Link href="/register" className="text-blue-600 underline">
-          Register
-        </Link>
-      </p>
-    </main>
+    <div className="flex min-h-screen flex-col items-center justify-center px-6">
+      <PageTransition>
+        <div className="w-full max-w-sm">
+          <div className="mb-10 flex justify-center">
+            <Logo />
+          </div>
+          <h1 className="t-headline text-center">Welcome back</h1>
+          <p className="t-body mt-2 text-center text-[0.9375rem]">
+            Log in to review your documents.
+          </p>
+          <form onSubmit={submit} className="mt-9 flex flex-col gap-3">
+            <input
+              className="field"
+              type="email"
+              required
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <input
+              className="field"
+              type="password"
+              required
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            {err && <p className="text-sm text-risk-high">{err}</p>}
+            <Button size="lg" disabled={busy} className="mt-3 w-full">
+              {busy ? "Signing in…" : "Log in"}
+            </Button>
+          </form>
+          <p className="mt-7 text-center text-[0.875rem] text-ink-2">
+            New to ClearClause?{" "}
+            <Link href="/register" className="font-medium text-accent hover:underline">
+              Create an account
+            </Link>
+          </p>
+          <p className="mt-10 flex items-center justify-center gap-1.5 text-[0.75rem] text-ink-3">
+            <Lock className="h-3 w-3" strokeWidth={2} />
+            Encrypted in transit · your documents stay private
+          </p>
+        </div>
+      </PageTransition>
+    </div>
   );
 }

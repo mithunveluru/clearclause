@@ -18,6 +18,7 @@ class FindingRepository:
                 severity=f["severity"],
                 confidence=f["confidence"],
                 explanation=f["explanation"],
+                impact=f.get("impact"),
                 action_text=f["action_text"],
             )
             for f in findings

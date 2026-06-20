@@ -42,10 +42,26 @@ _RAW: list[tuple[str, str, str, float, str, str]] = [
      "Ask for advance-notice guarantees and a cap on how much fees/rates can rise."),
 ]
 
+# Potential impact ("what it could cost you") — first-class, shared by API + PDF.
+IMPACT = {
+    "processing_fee": "You receive less than the headline loan amount, raising your effective borrowing cost.",
+    "service_fee": "The real price is higher than advertised once these add-on charges are included.",
+    "hidden_fee": "Unitemized charges can surface later and inflate the total you actually pay.",
+    "late_fee": "A single missed or delayed payment can add a recurring penalty on top of interest.",
+    "prepayment_penalty": "Paying early to save on interest is partly cancelled out by this penalty.",
+    "foreclosure_charge": "Exiting the loan early costs a percentage of the outstanding balance.",
+    "auto_renew_trap": "You keep being charged after the trial or term unless you actively cancel in time.",
+    "hard_cancellation": "Leaving is restricted, so you may be locked into paying for longer than you want.",
+    "bundled_addon": "You pay for an add-on you may not need, often without an explicit opt-in.",
+    "implied_consent": "You can be bound to terms you never actively agreed to.",
+    "vague_pricing_revision": "Your costs can rise after you sign, with little or no notice.",
+}
+
 RULES = [
     {
         "issue_type": t, "pattern": re.compile(p, re.IGNORECASE),
         "severity": s, "confidence": c, "explanation": e, "action_text": a,
+        "impact": IMPACT[t],
     }
     for (t, p, s, c, e, a) in _RAW
 ]
@@ -63,4 +79,5 @@ MISSING_DISCLOSURE = {
     "confidence": 0.6,
     "explanation": "No clear total-cost or APR-style disclosure was found, so the true all-in cost is not stated upfront.",
     "action_text": "Ask for the APR and the total amount payable (principal + all fees + interest) before agreeing.",
+    "impact": "Without a stated all-in cost, you cannot compare this offer fairly or know what you will really pay.",
 }

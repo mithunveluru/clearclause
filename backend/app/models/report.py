@@ -12,4 +12,5 @@ class Report(Base, TimestampMixin):
         ForeignKey("documents.id", ondelete="CASCADE"), unique=True, index=True, nullable=False
     )
     summary_json: Mapped[dict] = mapped_column(JSON, nullable=False)
-    html_path: Mapped[str] = mapped_column(String(512), nullable=False)
+    pdf_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    html_path: Mapped[str | None] = mapped_column(String(512), nullable=True)

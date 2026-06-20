@@ -21,6 +21,7 @@ def detect(clauses: list[tuple[int, str]]) -> list[dict]:
                         "confidence": rule["confidence"],
                         "explanation": rule["explanation"],
                         "action_text": rule["action_text"],
+                        "impact": rule["impact"],
                         "clause_text": text,
                     }
                 )

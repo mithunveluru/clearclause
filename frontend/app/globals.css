@@ -1,3 +1,48 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-canvas text-ink font-sans;
+    font-feature-settings: "cv02", "cv03", "cv04", "ss01";
+  }
+  ::selection {
+    background: rgba(10, 93, 214, 0.12);
+  }
+}
+
+@layer components {
+  /* Typography scale — typography does the visual work. */
+  .t-display {
+    @apply text-[clamp(2.6rem,6vw,4.5rem)] font-semibold leading-[1.04] tracking-tighter;
+  }
+  .t-headline {
+    @apply text-[clamp(1.75rem,3.5vw,2.5rem)] font-semibold leading-[1.1] tracking-tight;
+  }
+  .t-section {
+    @apply text-[1.0625rem] font-semibold tracking-tight;
+  }
+  .t-body {
+    @apply text-[1.0625rem] leading-relaxed text-ink-2;
+  }
+  .t-caption {
+    @apply text-[0.8125rem] font-medium tracking-tight text-ink-3;
+  }
+  .eyebrow {
+    @apply text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-ink-3;
+  }
+  .hairline {
+    @apply border border-line;
+  }
+  .card {
+    @apply rounded-2xl border border-line bg-surface shadow-soft;
+  }
+  .field {
+    @apply h-11 w-full rounded-xl border border-line bg-surface px-4 text-[0.9375rem] text-ink outline-none transition-[box-shadow,border-color] duration-200 placeholder:text-ink-3 focus:border-accent/40 focus:ring-4 focus:ring-accent/10;
+  }
+}

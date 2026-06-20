@@ -40,6 +40,7 @@ services:
     volumes:
       - ./backend:/app
       - ./storage:/storage
+      - ./sample-data:/sample-data
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)\""]
@@ -60,7 +61,8 @@ services:
     volumes:
       - ./backend:/app
       - ./storage:/storage
-    command: celery -A app.worker.celery_app worker --loglevel=info
+      - ./sample-data:/sample-data
+    command: celery -A app.worker.celery_app worker --beat --loglevel=info
 
   frontend:
     build: ./frontend

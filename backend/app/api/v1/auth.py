@@ -2,6 +2,7 @@ import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.ratelimit import rate_limit
 from app.core.security import decode_token
 from app.db.session import get_db
 from app.repositories.user_repo import UserRepository
@@ -21,12 +22,21 @@ def _service(db: AsyncSession = Depends(get_db)) -> AuthService:
     return AuthService(UserRepository(db))
 
 
-@router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register",
+    response_model=UserOut,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(rate_limit(limit=5, window=60, scope="register"))],
+)
 async def register(body: RegisterRequest, svc: AuthService = Depends(_service)):
     return await svc.register(body.email, body.password)
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post(
+    "/login",
+    response_model=TokenResponse,
+    dependencies=[Depends(rate_limit(limit=10, window=60, scope="login"))],
+)
 async def login(body: LoginRequest, svc: AuthService = Depends(_service)):
     return await svc.login(body.email, body.password)
 
