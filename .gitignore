@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+.next/
+npm-debug.log*
+
+# Env
+.env
+
+# Storage (keep dirs, ignore contents)
+storage/uploads/*
+storage/reports/*
+!storage/uploads/.gitkeep
+!storage/reports/.gitkeep
+
+# Misc
+.DS_Store
+
+# Claude Code local
+.claude/
