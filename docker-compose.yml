@@ -16,8 +16,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    ports:
-      - "5432:5432"
+    # No host port: app reaches it as `db:5432` internally. Use
+    # `docker compose exec db psql -U $POSTGRES_USER $POSTGRES_DB` for a shell.
 
   redis:
     image: redis:7-alpine
@@ -26,8 +26,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    ports:
-      - "6379:6379"
+    # No host port: app reaches it as `redis:6379` internally.
+    # Use `docker compose exec redis redis-cli` for a shell.
 
   backend:
     build: ./backend
