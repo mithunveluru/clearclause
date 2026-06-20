@@ -8,7 +8,7 @@ Definition of Done is met.
 | 0 | Product framing | ✅ done | Scope/taxonomy frozen in spec; samples land in Phase 13/15 |
 | 1 | Repo & local infra | ✅ code done | Runtime `docker compose up` check is user-run |
 | 2 | Auth & access control | ✅ done | JWT + bcrypt; register/login/refresh + /me; security tests pass |
-| 3 | Document ingestion | ⬜ todo | |
+| 3 | Document ingestion | ✅ done | Upload/list/get/delete verified live; magic-byte validation; uuid storage |
 | 4 | OCR pipeline | ⬜ todo | |
 | 5 | Clause segmentation | ⬜ todo | |
 | 6 | Detection engine | ⬜ todo | |
@@ -43,6 +43,14 @@ Definition of Done is met.
 - [x] register / login / refresh endpoints + service/repository separation
 - [x] get_current_user dependency + protected /api/v1/me route
 - [x] security unit tests pass (3/3)
+
+## Phase 3 checklist
+- [x] `documents` + `jobs` tables + migration 0002 (indexes: documents.user_id, documents.status, jobs.document_id)
+- [x] Upload endpoint with bounded read + MAX_UPLOAD_MB (413) enforcement
+- [x] File validation: extension allowlist + magic-byte content sniff (rejects disguised files)
+- [x] UUID stored filenames; original filename never used in path
+- [x] List / get / delete with per-user ownership (404 on others' docs)
+- [x] Verified live: register→login→upload→list→get→delete, status=`uploaded`
 
 ## Deviations from spec (deliberate, ponytail)
 - `docker-compose.yml` at repo root, not `infra/`, so the spec's documented
