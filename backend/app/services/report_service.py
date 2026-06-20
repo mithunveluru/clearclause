@@ -1,5 +1,5 @@
 from app.core import files
-from app.reporting import build_summary, render_html
+from app.reporting import build_pdf, build_summary
 from app.repositories.clause_repo import ClauseRepository
 from app.repositories.document_repo import DocumentRepository
 from app.repositories.finding_repo import FindingRepository
@@ -39,6 +39,7 @@ class ReportService:
                 "severity": f.severity,
                 "confidence": f.confidence,
                 "explanation": f.explanation,
+                "impact": f.impact,
                 "action_text": f.action_text,
                 "clause_text": text_by_id.get(f.clause_id),
             }
@@ -78,6 +79,6 @@ class ReportService:
             },
         )
 
-        html_path = files.save_report(render_html(summary))
-        await self.reports.save(document_id, summary, html_path)
+        pdf_path = build_pdf(summary, files.new_report_path())
+        await self.reports.save(document_id, summary, pdf_path)
         return summary

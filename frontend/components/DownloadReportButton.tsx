@@ -1,19 +1,26 @@
 "use client";
+import { FileText } from "lucide-react";
+import { useState } from "react";
 import { fetchReportBlob } from "@/lib/api";
+import { Button } from "@/components/ui/Button";
 
 export default function DownloadReportButton({ docId }: { docId: number }) {
+  const [busy, setBusy] = useState(false);
   async function open() {
-    const blob = await fetchReportBlob(docId);
-    const url = URL.createObjectURL(blob);
-    window.open(url, "_blank");
-    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    setBusy(true);
+    try {
+      const blob = await fetchReportBlob(docId);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } finally {
+      setBusy(false);
+    }
   }
   return (
-    <button
-      onClick={open}
-      className="rounded-lg bg-gray-900 px-4 py-2 font-medium text-white hover:bg-gray-700"
-    >
-      Open report
-    </button>
+    <Button variant="secondary" onClick={open} disabled={busy}>
+      <FileText className="h-4 w-4" strokeWidth={1.75} />
+      {busy ? "Preparing…" : "Download PDF report"}
+    </Button>
   );
 }

@@ -17,6 +17,7 @@ export type Finding = {
   severity: string;
   confidence: number;
   explanation: string;
+  impact: string | null;
   action_text: string;
   clause_text: string | null;
 };

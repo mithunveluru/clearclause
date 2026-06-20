@@ -8,10 +8,10 @@ class ReportRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def save(self, document_id: int, summary_json: dict, html_path: str) -> Report:
+    async def save(self, document_id: int, summary_json: dict, pdf_path: str) -> Report:
         await self.db.execute(delete(Report).where(Report.document_id == document_id))
         report = Report(
-            document_id=document_id, summary_json=summary_json, html_path=html_path
+            document_id=document_id, summary_json=summary_json, pdf_path=pdf_path
         )
         self.db.add(report)
         await self.db.commit()

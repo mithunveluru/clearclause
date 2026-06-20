@@ -3,6 +3,7 @@ from fastapi import HTTPException, status
 from app.core import files
 from app.models.document import Document
 from app.repositories.document_repo import DocumentRepository
+from app.repositories.report_repo import ReportRepository
 
 
 class DocumentService:
@@ -31,5 +32,9 @@ class DocumentService:
 
     async def delete(self, doc_id: int, user_id: int) -> None:
         doc = await self.get(doc_id, user_id)
+        # Remove the report file too (the DB row cascades, the file would orphan).
+        report = await ReportRepository(self.repo.db).get(doc_id)
+        if report and report.pdf_path:
+            files.delete_file(report.pdf_path)
         files.delete_file(doc.file_path)
         await self.repo.delete(doc)

@@ -26,4 +26,4 @@ storage/reports/*
 
 # Claude Code local
 .claude/
-*.md
+*.node_modules  

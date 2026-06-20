@@ -10,6 +10,7 @@ class FindingOut(BaseModel):
     severity: str
     confidence: float
     explanation: str
+    impact: str | None = None
     action_text: str
     created_at: datetime
     clause_text: str | None = None

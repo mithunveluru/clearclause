@@ -37,12 +37,10 @@ def save_upload(content: bytes, ext: str) -> str:
     return path
 
 
-def save_report(html: str) -> str:
+def new_report_path() -> str:
+    """A fresh uuid path under REPORT_DIR for a generated PDF report."""
     os.makedirs(settings.REPORT_DIR, exist_ok=True)
-    path = os.path.join(settings.REPORT_DIR, f"{uuid.uuid4().hex}.html")
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(html)
-    return path
+    return os.path.join(settings.REPORT_DIR, f"{uuid.uuid4().hex}.pdf")
 
 
 def delete_file(path: str) -> None:

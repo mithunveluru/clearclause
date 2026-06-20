@@ -3,8 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.api.deps import get_current_user
+from app.api.health import router as health_router
+from app.api.v1.analysis import router as analysis_router
+from app.api.v1.auth import router as auth_router
+from app.api.v1.documents import router as documents_router
 from app.core.config import settings
+from app.core.logredact import install_redaction
 from app.db.session import engine
+from app.models.user import User
+from app.schemas.auth import UserOut
 from app.telemetry import (
     instrument_celery,
     instrument_engine,
@@ -14,12 +21,7 @@ from app.telemetry import (
 )
 
 setup_telemetry("clearclause-api")
-from app.api.health import router as health_router
-from app.api.v1.auth import router as auth_router
-from app.api.v1.analysis import router as analysis_router
-from app.api.v1.documents import router as documents_router
-from app.models.user import User
-from app.schemas.auth import UserOut
+install_redaction()
 
 app = FastAPI(title="ClearClause API", version="0.1.0")
 

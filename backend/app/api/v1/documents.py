@@ -3,11 +3,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
 from app.core.config import settings
+from app.core.ratelimit import rate_limit
 from app.db.session import get_db
 from app.models.user import User
 from app.repositories.document_repo import DocumentRepository
 from app.schemas.document import DocumentOut
 from app.services.document_service import DocumentService
+from app.worker.tasks import run_analysis
 
 router = APIRouter(prefix="/api/v1/documents", tags=["documents"])
 
@@ -16,7 +18,12 @@ def _service(db: AsyncSession = Depends(get_db)) -> DocumentService:
     return DocumentService(DocumentRepository(db))
 
 
-@router.post("/upload", response_model=DocumentOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/upload",
+    response_model=DocumentOut,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(rate_limit(limit=30, window=60, scope="upload"))],
+)
 async def upload(
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
@@ -31,7 +38,10 @@ async def upload(
         )
     if not content:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file")
-    return await svc.upload(user.id, file.filename or "upload", content)
+    doc = await svc.upload(user.id, file.filename or "upload", content)
+    # Analysis starts automatically — no separate Analyze step.
+    run_analysis.delay(doc.id, user.id)
+    return doc
 
 
 @router.get("", response_model=list[DocumentOut])

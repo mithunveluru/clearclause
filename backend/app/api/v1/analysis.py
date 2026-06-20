@@ -52,6 +52,7 @@ async def list_findings(
             severity=f.severity,
             confidence=f.confidence,
             explanation=f.explanation,
+            impact=f.impact,
             action_text=f.action_text,
             created_at=f.created_at,
             clause_text=clause_text.get(f.clause_id),
@@ -109,13 +110,13 @@ async def get_report(
     """Serve the generated HTML report (opens in browser / downloadable)."""
     await DocumentService(DocumentRepository(db)).get(doc_id, user.id)
     report = await ReportRepository(db).get(doc_id)
-    if report is None:
+    if report is None or not report.pdf_path:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Report not generated yet"
         )
     return FileResponse(
-        report.html_path,
-        media_type="text/html",
-        filename=f"clearclause-report-{doc_id}.html",
+        report.pdf_path,
+        media_type="application/pdf",
+        filename=f"ClearClause-Report-{doc_id}.pdf",
         content_disposition_type="inline",
     )

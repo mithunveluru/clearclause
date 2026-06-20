@@ -1,19 +1,25 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "ClearClause",
-  description: "Scan loan and subscription terms for hidden fees and risky clauses.",
+  title: "ClearClause — Understand what you're agreeing to",
+  description:
+    "ClearClause reviews loan agreements and subscription terms for hidden fees, penalties, and auto-renew traps — in plain English.",
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-gray-50 text-gray-900 antialiased">
-        {children}
-      </body>
+    <html lang="en" className={inter.variable}>
+      <body className="min-h-screen">{children}</body>
     </html>
   );
 }
