@@ -26,3 +26,4 @@ storage/reports/*
 
 # Claude Code local
 .claude/
+*.md
