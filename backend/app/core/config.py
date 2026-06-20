@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     OCR_PROVIDER: str = "tesseract"
     OTEL_EXPORTER_OTLP_ENDPOINT: str = ""
     MAX_UPLOAD_MB: int = 10
+    CORS_ORIGINS: str = "http://localhost:3000"  # comma-separated
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
 
     @property
     def sync_database_url(self) -> str:

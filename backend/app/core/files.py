@@ -37,6 +37,14 @@ def save_upload(content: bytes, ext: str) -> str:
     return path
 
 
+def save_report(html: str) -> str:
+    os.makedirs(settings.REPORT_DIR, exist_ok=True)
+    path = os.path.join(settings.REPORT_DIR, f"{uuid.uuid4().hex}.html")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(html)
+    return path
+
+
 def delete_file(path: str) -> None:
     try:
         os.remove(path)

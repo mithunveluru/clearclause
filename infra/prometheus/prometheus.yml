@@ -1,0 +1,14 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  # OTel Collector's Prometheus exporter (app + worker OTLP metrics)
+  - job_name: otel-collector
+    static_configs:
+      - targets: ["otel-collector:8889"]
+
+  # FastAPI /metrics (request count, latency, errors, in-progress)
+  - job_name: clearclause-api
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["backend:8000"]

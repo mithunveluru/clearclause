@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.document import Document
@@ -37,6 +37,12 @@ class DocumentRepository:
             )
         )
         return result.scalar_one_or_none()
+
+    async def update_status(self, document_id: int, status: str) -> None:
+        await self.db.execute(
+            update(Document).where(Document.id == document_id).values(status=status)
+        )
+        await self.db.commit()
 
     async def delete(self, doc: Document) -> None:
         await self.db.delete(doc)
