@@ -6,6 +6,7 @@ python-multipart==0.0.20
 # Config / validation
 pydantic==2.10.4
 pydantic-settings==2.7.1
+email-validator==2.2.0
 
 # Database
 sqlalchemy[asyncio]==2.0.36
@@ -14,7 +15,7 @@ alembic==1.14.0
 psycopg2-binary==2.9.10  # sync driver for Alembic migrations
 
 # Auth (Phase 2)
-passlib[bcrypt]==1.7.4
+bcrypt==4.2.1
 pyjwt==2.10.1
 
 # Worker / queue (Phase 10)
