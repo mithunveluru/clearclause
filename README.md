@@ -1,13 +1,21 @@
-# ClearClause
+# ClearClause — Document Risk Intelligence Platform
 
-**Understand exactly what you're agreeing to.** ClearClause reviews loan agreements
-and subscription terms for hidden fees, penalties, and auto-renew traps — and explains
-every risk in plain English, with a downloadable PDF report.
+**Understand exactly what you're agreeing to.** ClearClause reviews financial and
+property documents for hidden fees, penalties, traps, and missing protections — and
+explains every risk in plain English, with a downloadable PDF report and optional,
+fully-local AI summaries and grounded Q&A.
 
-Upload a PDF or image → it reads the text, segments every clause, applies an
-**explainable rule engine**, scores the risk, estimates the true cost, and generates a
-professional report. No black-box, model-only verdicts: every finding traces to specific
-wording in your document.
+Upload a PDF or image → it reads the text, **classifies the document**, extracts
+structured **entities**, runs a **type-specific analyzer**, scores the risk, generates a
+professional report, and (optionally) indexes it for **retrieval-grounded Q&A**. The
+intelligence is **deterministic-first** — every finding traces to specific wording; AI
+only rephrases and answers over those grounded facts, never invents them.
+
+**Document families**
+
+| Consumer | Property |
+|---|---|
+| Loan · Subscription · Credit card | Patta · Sale deed · Rental / Lease agreement |
 
 ---
 
@@ -20,21 +28,23 @@ consumer-protection pressure increasingly emphasises transparent fees, clear bor
 disclosures, explicit consent, and fewer dark patterns. ClearClause puts that scrutiny in
 the consumer's hands before they sign.
 
-**MVP scope:** personal-loan agreements and subscription / free-trial / AutoPay terms.
-
 ## Features
 
 - Secure upload (PDF / PNG / JPG) with content-sniffing validation
-- **Automatic** pipeline — analysis starts on upload, no extra step
+- **Automatic, staged pipeline** (Celery chain across queues) — analysis starts on upload
 - Free, local-first OCR (Tesseract) behind a pluggable provider interface
-- Clause segmentation + normalization
-- Explainable detection of 12 risk categories (fees, penalties, auto-renew, consent, …)
-- Weighted risk score (0–100) with severity bands and a plain-English summary
-- True-cost estimation from amounts stated in the document
-- Per-finding depth: what was found · why it matters · where it appears · what to do
+- **Document classification** (rule-based, pluggable) into 8 types
+- **Structured entity extraction** per document family
+- **Type-specific analyzers** with their own headline metric (Rental Fairness, Patta
+  Health, Sale Agreement Risk, Card Terms Transparency, fee-weighted loan/subscription risk)
+- Explainable findings: what was found · why it matters · where it appears · what to do
 - **Purpose-built PDF report** (cover, executive summary, clause analysis, cost impact, …)
+- **Optional local AI (V3):** grounded summaries + retrieval-grounded Q&A with citations
+  (Ollama + Qdrant) — off by default; V1/V2 work fully without it
 - Per-user scan history, ownership-enforced access, document deletion
-- Full observability: traces, metrics, and logs
+- Full observability: traces, metrics, logs + Grafana dashboards (API, pipeline, platform)
+
+See **[docs/V2_V3_PLAN.md](docs/V2_V3_PLAN.md)** for the platform architecture & evolution plan.
 
 ## Architecture
 
@@ -49,12 +59,16 @@ flowchart TD
     API --> RD[(Redis)]
     API --> FS[/Local file storage/]
     API -->|enqueue| RD
-    RD -->|job| W[Celery worker]
-    W --> OCR[OCR · Tesseract]
-    OCR --> SEG[Clause segmentation]
-    SEG --> DET[Rule engine]
-    DET --> SCORE[Risk scoring + true cost]
+    RD -->|chain| W[Celery worker]
+    W --> OCR[OCR]
+    OCR --> CLS[Classify]
+    CLS --> EXT[Entities + Analyzer]
+    EXT --> SCORE[Risk score / headline metric]
     SCORE --> REP[PDF report]
+    REP -.AI full.-> CE[Chunk + embed → Qdrant]
+    REP -.AI on.-> AIS[AI summary]
+    CE --> QDR[(Qdrant)]
+    AIS --> OLL[Ollama]
     W --> PG
     API -.OTLP.-> COL[OTel Collector]
     W -.OTLP.-> COL
@@ -78,6 +92,7 @@ flowchart TD
 | Cache / queue | Redis | Job queue + rate limiting |
 | OCR | Tesseract (PaddleOCR adapter stub) | Free, CPU-only, pluggable |
 | Reports | ReportLab | Purpose-built PDF, not HTML-to-PDF |
+| AI (optional) | Ollama (qwen3 / gemma3) + Qdrant | Local, private LLM + vector search |
 | Observability | OpenTelemetry + Prometheus + Loki + Tempo + Grafana | Fully open-source |
 | CI/CD | GitHub Actions | Lint, test, build, GHCR |
 
@@ -97,6 +112,25 @@ With the observability stack:
 ```bash
 docker compose -f docker-compose.yml -f infra/docker-compose.obs.yml up --build
 ```
+
+### With local AI (RAG summaries + grounded Q&A) — optional
+
+AI is **off by default**; V1/V2 work fully without it. To enable the local,
+private AI layer (Ollama + Qdrant — downloads a few GB of models):
+
+```bash
+docker compose --profile ai up -d ollama qdrant
+docker compose exec ollama ollama pull nomic-embed-text   # embeddings (~270 MB)
+docker compose exec ollama ollama pull qwen3:8b           # LLM (or gemma3:4b, smaller)
+# set AI_MODE=full in .env, then recreate the app:
+docker compose up -d --force-recreate backend worker
+```
+
+Re-upload a document (or `POST /api/v1/documents/{id}/reprocess`). The detail page
+then shows an **AI summary** and an **Ask-about-this-document** chat with source
+citations. `AI_MODE=summary_only` enables summaries without Q&A. Every AI output is
+grounded strictly in the deterministic findings/clauses — no outside facts, and Q&A
+refuses when retrieval finds nothing.
 
 | Service | URL |
 |---|---|
