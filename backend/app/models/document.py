@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, TimestampMixin
@@ -20,6 +20,11 @@ class Document(Base, TimestampMixin):
     status: Mapped[str] = mapped_column(
         String(30), default="uploaded", nullable=False, index=True
     )
+    classified_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    document_family: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    analysis_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    qa_ready: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    ai_summary_ready: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
 
 class Job(Base):

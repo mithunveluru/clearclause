@@ -20,3 +20,5 @@ class Finding(Base, TimestampMixin):
     explanation: Mapped[str] = mapped_column(Text, nullable=False)
     impact: Mapped[str | None] = mapped_column(Text, nullable=True)
     action_text: Mapped[str] = mapped_column(Text, nullable=False)
+    document_family: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    analyzer_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
