@@ -1,4 +1,7 @@
 from app.detection import detect
+import pytest
+pytestmark = pytest.mark.v1_regression
+
 
 BAD_CLAUSES = [
     (1, "A processing fee of 2% is deducted upfront from every disbursal."),
