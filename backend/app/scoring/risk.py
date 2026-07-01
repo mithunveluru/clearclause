@@ -79,6 +79,8 @@ def summarize(cats: dict) -> str:
     total = cats["total"]
     scored = {k: v for k, v in cats.items() if k != "total" and v > 0}
     if not scored:
+        if total > 0:  # e.g. property docs scored from an analyzer headline metric
+            return f"This document was assessed as {band(total).lower()} risk overall."
         return "No significant risks were detected in this document."
     top = max(scored, key=scored.get)
     return f"This document looks {band(total).lower()} risk because {_SUMMARY_REASON[top]}."

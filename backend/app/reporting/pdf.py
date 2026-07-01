@@ -155,7 +155,7 @@ def build_pdf(summary: dict, out_path: str) -> str:
 
     story = []
 
-    # ---- Cover ----
+    # Cover
     story += [Spacer(1, 5.5 * cm)]
     story += [Paragraph("CONSUMER RISK REPORT", st["eyebrow"])]
     story += [Spacer(1, 6), Paragraph("Document Risk Assessment", st["coverTitle"])]
@@ -177,7 +177,7 @@ def build_pdf(summary: dict, out_path: str) -> str:
                         "financial advice.", st["small"])]
     story += [PageBreak()]
 
-    # ---- Executive summary ----
+    # Executive summary
     story += [Paragraph("Executive Summary", st["h1"]),
               Paragraph(score["summary"], st["body"]), Spacer(1, 10)]
     stat = Table([[
@@ -195,7 +195,7 @@ def build_pdf(summary: dict, out_path: str) -> str:
     ]))
     story += [stat, Spacer(1, 18)]
 
-    # ---- Risk overview ----
+    # Risk overview
     story += [Paragraph("Risk Overview", st["h1"])]
     rows = []
     for key, maxv in CATEGORY_MAX.items():
@@ -210,7 +210,7 @@ def build_pdf(summary: dict, out_path: str) -> str:
     ]))
     story += [overview, Spacer(1, 18)]
 
-    # ---- Key findings ----
+    # Key findings
     story += [Paragraph("Key Findings", st["h1"])]
     if summary["top_findings"]:
         for f in summary["top_findings"]:
@@ -223,7 +223,7 @@ def build_pdf(summary: dict, out_path: str) -> str:
         story += [Paragraph("No material risks were detected.", st["body"])]
     story += [Spacer(1, 8), PageBreak()]
 
-    # ---- Clause analysis ----
+    # Clause analysis
     story += [Paragraph("Clause Analysis", st["h1"]),
               Paragraph("Every flagged clause, with the exact wording, why it matters, and "
                         "what to do.", st["small"]), Spacer(1, 12)]
@@ -233,7 +233,7 @@ def build_pdf(summary: dict, out_path: str) -> str:
     else:
         story += [Paragraph("No risky clauses were found in this document.", st["body"])]
 
-    # ---- Cost impact ----
+    # Cost impact
     story += [Spacer(1, 8), Paragraph("Cost Impact Assessment", st["h1"])]
     cost_rows = [["Component", "Stated value"]]
     for key, label in [("headline_rate", "Headline rate"), ("processing_fee", "Processing fee"),
@@ -256,14 +256,14 @@ def build_pdf(summary: dict, out_path: str) -> str:
               Paragraph("Percentages are shown as stated and are not added to the estimated "
                         "true cost, which sums known currency amounts only.", st["small"])]
 
-    # ---- Recommended actions ----
+    # Recommended actions
     story += [Spacer(1, 16), Paragraph("Recommended Actions", st["h1"])]
     for i, q in enumerate(summary["questions"], 1):
         story += [Paragraph(f"<b>{i}.</b>&nbsp;&nbsp;{q}", st["body"]), Spacer(1, 5)]
     if not summary["questions"]:
         story += [Paragraph("No specific actions required.", st["body"])]
 
-    # ---- Appendix ----
+    # Appendix
     story += [Spacer(1, 16), HRFlowable(width="100%", thickness=0.5, color=LINE),
               Spacer(1, 10), Paragraph("Appendix · Methodology", st["h2"]),
               Paragraph("ClearClause extracts the document text, segments it into individual "

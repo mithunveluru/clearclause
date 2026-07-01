@@ -35,7 +35,21 @@ def setup_telemetry(service_name: str) -> None:
     )
     trace.set_tracer_provider(provider)
     _setup_logs(resource)
+    _setup_metrics(resource)
     _INITIALIZED = True
+
+
+def _setup_metrics(resource) -> None:
+    from opentelemetry import metrics
+    from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
+    from opentelemetry.sdk.metrics import MeterProvider
+    from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+
+    reader = PeriodicExportingMetricReader(
+        OTLPMetricExporter(endpoint=settings.OTEL_EXPORTER_OTLP_ENDPOINT, insecure=True),
+        export_interval_millis=15000,
+    )
+    metrics.set_meter_provider(MeterProvider(resource=resource, metric_readers=[reader]))
 
 
 def _setup_logs(resource) -> None:
@@ -93,3 +107,10 @@ def get_tracer(name: str = "clearclause"):
     from opentelemetry import trace
 
     return trace.get_tracer(name)
+
+
+def get_meter(name: str = "clearclause"):
+    """Returns a meter; no-op instruments when no provider is configured."""
+    from opentelemetry import metrics
+
+    return metrics.get_meter(name)
