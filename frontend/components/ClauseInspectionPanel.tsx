@@ -1,5 +1,5 @@
 "use client";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { X } from "lucide-react";
 import type { Finding } from "@/lib/api";
 import { issueLabel, severityMeta } from "@/lib/ui";
@@ -15,14 +15,14 @@ export function ClauseInspectionPanel({
     <AnimatePresence>
       {finding && (
         <>
-          <motion.div
-            className="fixed inset-0 z-50 bg-ink/20 backdrop-blur-[2px]"
+          <m.div
+            className="fixed inset-0 z-50 bg-brand-deep/10 backdrop-blur-[2px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
           />
-          <motion.aside
+          <m.aside
             className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col bg-surface shadow-lift"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
@@ -69,7 +69,7 @@ export function ClauseInspectionPanel({
               )}
 
               <Section label="Where it appears">
-                <blockquote className="rounded-xl border-l-2 border-ink/15 bg-canvas px-4 py-3 text-[0.9375rem] italic leading-relaxed text-ink-2">
+                <blockquote className="rounded-xl border-l-2 border-brand/30 bg-brand/[0.03] px-4 py-3 text-[0.9375rem] italic leading-relaxed text-ink-2">
                   “{finding.clause_text}”
                 </blockquote>
               </Section>
@@ -78,7 +78,7 @@ export function ClauseInspectionPanel({
                 <p className="text-[0.9375rem] leading-relaxed text-ink">{finding.action_text}</p>
               </Section>
             </div>
-          </motion.aside>
+          </m.aside>
         </>
       )}
     </AnimatePresence>

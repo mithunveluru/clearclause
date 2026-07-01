@@ -1,16 +1,15 @@
 "use client";
-import { AnimatePresence, motion } from "framer-motion";
-import { Check, Loader2 } from "lucide-react";
+import { AnimatePresence, m } from "framer-motion";
+import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const STAGES = [
-  { key: "uploaded", label: "Document received" },
-  { key: "ocr", label: "Extracting content" },
-  { key: "analysis", label: "Reviewing clauses" },
-  { key: "report_ready", label: "Report ready" },
+  { key: "uploaded",      label: "Document received",     sub: "Safely stored and queued" },
+  { key: "ocr",          label: "Extracting content",     sub: "Reading every word in the agreement" },
+  { key: "analysis",     label: "Reviewing clauses",      sub: "Flagging fees, risks, and traps" },
+  { key: "report_ready", label: "Report ready",           sub: "Your findings are compiled" },
 ];
 
-// Investigative lines that cycle while analysis runs — makes the work feel real.
 const ACTIVITY = [
   "Extracting the document text…",
   "Splitting the agreement into individual clauses…",
@@ -35,14 +34,14 @@ export function AnalysisProgress({ status }: { status: string }) {
 
   useEffect(() => {
     if (!running) return;
-    const id = setInterval(() => setTick((t) => t + 1), 2000);
+    const id = setInterval(() => setTick((t) => t + 1), 2200);
     return () => clearInterval(id);
   }, [running]);
 
   if (status === "failed") {
     return (
       <p className="text-[0.9375rem] font-medium text-risk-high">
-        We couldn’t finish analyzing this document. Please try uploading it again.
+        We couldn't finish analyzing this document. Please try uploading it again.
       </p>
     );
   }
@@ -52,33 +51,48 @@ export function AnalysisProgress({ status }: { status: string }) {
 
   return (
     <div>
-      <ol className="space-y-4">
+      <ol className="space-y-5">
         {STAGES.map((s, i) => {
           const isDone = i < current || done;
           const isActive = i === current && !done;
           return (
-            <li key={s.key} className="flex items-center gap-3.5">
+            <m.li
+              key={s.key}
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.07, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+              className="flex items-start gap-3.5"
+            >
               <span
-                className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
-                  isDone ? "bg-ink text-white" : "border border-line bg-surface text-ink-3"
+                className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-all duration-300 ${
+                  isDone
+                    ? "bg-brand text-white"
+                    : isActive
+                    ? "border-2 border-brand bg-brand/[0.08]"
+                    : "border border-line bg-surface"
                 }`}
               >
                 {isDone ? (
-                  <Check className="h-4 w-4" strokeWidth={2.5} />
+                  <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
                 ) : isActive ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-ink" strokeWidth={2.5} />
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-brand" />
                 ) : (
-                  <span className="text-[0.6875rem] font-semibold">{i + 1}</span>
+                  <span className="text-[0.625rem] font-semibold text-ink-3">{i + 1}</span>
                 )}
               </span>
-              <span
-                className={`text-[0.9375rem] tracking-tight ${
-                  i <= current || done ? "text-ink" : "text-ink-3"
-                }`}
-              >
-                {s.label}
-              </span>
-            </li>
+              <div>
+                <p
+                  className={`text-[0.9375rem] font-medium tracking-tight transition-colors duration-200 ${
+                    isDone ? "text-brand" : isActive ? "text-ink" : "text-ink-3"
+                  }`}
+                >
+                  {s.label}
+                </p>
+                {(isDone || isActive) && (
+                  <p className="mt-0.5 text-[0.8125rem] text-ink-3">{s.sub}</p>
+                )}
+              </div>
+            </m.li>
           );
         })}
       </ol>
@@ -86,16 +100,16 @@ export function AnalysisProgress({ status }: { status: string }) {
       {running && (
         <div className="mt-7 border-t border-line pt-5">
           <AnimatePresence mode="wait">
-            <motion.p
+            <m.p
               key={tick % ACTIVITY.length}
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              className="text-[0.875rem] text-ink-2"
+              className="text-[0.875rem] font-medium text-brand"
             >
               {ACTIVITY[tick % ACTIVITY.length]}
-            </motion.p>
+            </m.p>
           </AnimatePresence>
         </div>
       )}

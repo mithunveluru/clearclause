@@ -1,5 +1,5 @@
 "use client";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import type { Finding } from "@/lib/api";
 import { issueLabel, severityMeta } from "@/lib/ui";
@@ -22,7 +22,7 @@ export function FindingsTimeline({
       {findings.map((f, i) => {
         const m = severityMeta(f.severity);
         return (
-          <motion.li
+          <m.li
             key={f.id}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -72,7 +72,7 @@ export function FindingsTimeline({
                 <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={2} />
               </button>
             )}
-          </motion.li>
+          </m.li>
         );
       })}
     </ol>
