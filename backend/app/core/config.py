@@ -18,6 +18,24 @@ class Settings(BaseSettings):
     MAX_UPLOAD_MB: int = 10
     FILE_RETENTION_DAYS: int = 7
     CORS_ORIGINS: str = "http://localhost:3000"  # comma-separated
+    PIPELINE: str = "staged"
+
+    ENV: str = "development"          # set to "production" in prod deployments
+    COOKIE_SECURE: bool = False       # set True when serving over HTTPS
+    TRUSTED_PROXY_DEPTH: int = 0      # 1 for nginx/Traefik, 0 for direct
+    METRICS_TOKEN: str = ""           # non-empty enables /internal/metrics with token auth
+
+    # Classification routing thresholds.
+    # auto: proceed immediately; confirm: surface alternatives to user; manual: require user pick.
+    CLASSIFICATION_AUTO_THRESHOLD: float = 0.90
+    CLASSIFICATION_CONFIRM_THRESHOLD: float = 0.70
+
+    # AI / RAG (V3) — all optional. AI_MODE=off keeps V1/V2 fully working.
+    AI_MODE: str = "off"  # off | summary_only | full
+    AI_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_API_KEY: str = ""
+    JINA_API_KEY: str = ""
+    QDRANT_URL: str = "http://qdrant:6333"
 
     @property
     def cors_origins_list(self) -> list[str]:
