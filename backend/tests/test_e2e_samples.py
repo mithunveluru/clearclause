@@ -9,7 +9,10 @@ from tests.pipeline_helper import run_pipeline
 _CANDIDATES = [Path("/sample-data"), Path(__file__).resolve().parents[2] / "sample-data"]
 SAMPLE_DIR = next((p for p in _CANDIDATES if p.is_dir()), None)
 
-pytestmark = pytest.mark.skipif(SAMPLE_DIR is None, reason="sample-data directory not found")
+pytestmark = [
+    pytest.mark.v1_regression,
+    pytest.mark.skipif(SAMPLE_DIR is None, reason="sample-data directory not found"),
+]
 
 
 def _run(name: str) -> dict:

@@ -1,5 +1,8 @@
 """Integration: full analysis pipeline (segment -> detect -> score -> report)."""
 from tests.pipeline_helper import run_pipeline
+import pytest
+pytestmark = pytest.mark.v1_regression
+
 
 RISKY = [
     "PERSONAL LOAN AGREEMENT",

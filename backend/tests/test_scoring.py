@@ -1,5 +1,8 @@
 from app.scoring import estimate_cost, score_findings, summarize
 from app.scoring.risk import band
+import pytest
+pytestmark = pytest.mark.v1_regression
+
 
 BAD = [
     {"issue_type": "processing_fee", "severity": "medium", "clause_text": "processing fee of 2 percent applies"},

@@ -1,5 +1,8 @@
 from app.segmentation import classify_clause, normalize_text, segment
 from app.segmentation.segmenter import is_heading, split_clauses
+import pytest
+pytestmark = pytest.mark.v1_regression
+
 
 
 def test_normalize_strips_junk_and_collapses():
