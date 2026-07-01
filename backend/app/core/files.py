@@ -38,7 +38,6 @@ def save_upload(content: bytes, ext: str) -> str:
 
 
 def new_report_path() -> str:
-    """A fresh uuid path under REPORT_DIR for a generated PDF report."""
     os.makedirs(settings.REPORT_DIR, exist_ok=True)
     return os.path.join(settings.REPORT_DIR, f"{uuid.uuid4().hex}.pdf")
 

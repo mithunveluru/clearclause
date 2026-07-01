@@ -9,7 +9,7 @@ from app.models.user import User
 from app.repositories.document_repo import DocumentRepository
 from app.schemas.document import DocumentOut
 from app.services.document_service import DocumentService
-from app.worker.tasks import run_analysis
+from app.worker.pipeline import dispatch
 
 router = APIRouter(prefix="/api/v1/documents", tags=["documents"])
 
@@ -40,7 +40,7 @@ async def upload(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file")
     doc = await svc.upload(user.id, file.filename or "upload", content)
     # Analysis starts automatically — no separate Analyze step.
-    run_analysis.delay(doc.id, user.id)
+    dispatch(doc.id, user.id)
     return doc
 
 
