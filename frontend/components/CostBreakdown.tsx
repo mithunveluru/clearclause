@@ -18,9 +18,9 @@ export function CostBreakdown({ cost }: { cost: Record<string, number | null> })
           </div>
         ))}
       </dl>
-      <div className="mt-4 flex items-baseline justify-between rounded-xl bg-canvas px-4 py-4">
-        <span className="text-[0.9375rem] font-medium">Estimated true cost</span>
-        <span className="text-xl font-semibold tabular-nums tracking-tight">
+      <div className="mt-4 flex items-baseline justify-between rounded-xl bg-brand/[0.05] px-4 py-4">
+        <span className="text-[0.9375rem] font-medium text-brand">Estimated true cost</span>
+        <span className="text-xl font-semibold tabular-nums tracking-tight text-brand">
           {fmt(cost.estimated_true_cost)}
         </span>
       </div>

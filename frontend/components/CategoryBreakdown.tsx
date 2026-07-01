@@ -1,5 +1,5 @@
 "use client";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 
 const ROWS: { key: string; label: string; max: number }[] = [
   { key: "fee_opacity", label: "Fee opacity", max: 20 },
@@ -25,8 +25,8 @@ export function CategoryBreakdown({ breakdown }: { breakdown: Record<string, num
               </span>
             </div>
             <div className="h-1 w-full overflow-hidden rounded-full bg-line">
-              <motion.div
-                className="h-full rounded-full bg-ink/80"
+              <m.div
+                className="h-full rounded-full bg-brand/70"
                 initial={{ width: 0 }}
                 animate={{ width: `${pct}%` }}
                 transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}

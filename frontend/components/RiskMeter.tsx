@@ -1,5 +1,5 @@
 "use client";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { bandMeta } from "@/lib/ui";
 
 export function RiskMeter({ total, band }: { total: number; band: string }) {
@@ -21,7 +21,7 @@ export function RiskMeter({ total, band }: { total: number; band: string }) {
       </div>
 
       <div className="relative mt-5 h-1.5 w-full overflow-hidden rounded-full bg-line">
-        <motion.div
+        <m.div
           className="absolute inset-y-0 left-0 rounded-full"
           style={{ backgroundColor: meta.color }}
           initial={{ width: 0 }}
