@@ -3,14 +3,26 @@ from celery.signals import worker_process_init
 
 from app.core.config import settings
 
-# Redis as broker + result backend.
 celery_app = Celery(
     "clearclause",
     broker=settings.REDIS_URL,
     backend=settings.REDIS_URL,
-    include=["app.worker.tasks"],
+    include=["app.worker.tasks", "app.worker.pipeline"],
 )
 celery_app.conf.task_track_started = True
+
+# Staged pipeline routing (PIPELINE=staged). Worker consumes all of these queues.
+celery_app.conf.task_routes = {
+    "stage.ocr": {"queue": "ocr_queue"},
+    "stage.classify": {"queue": "analysis_queue"},
+    "stage.segment": {"queue": "analysis_queue"},
+    "stage.analyze": {"queue": "analysis_queue"},
+    "stage.score": {"queue": "analysis_queue"},
+    "stage.report": {"queue": "report_queue"},
+    "stage.chunk": {"queue": "ai_queue"},
+    "stage.embed": {"queue": "ai_queue"},
+    "stage.ai_summary": {"queue": "ai_queue"},
+}
 
 # Daily stale-file cleanup. Runs via embedded beat (worker started with -B).
 # ponytail: embedded beat is fine for one worker; use a separate beat service if scaled out.
