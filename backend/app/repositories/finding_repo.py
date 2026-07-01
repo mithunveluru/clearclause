@@ -20,6 +20,8 @@ class FindingRepository:
                 explanation=f["explanation"],
                 impact=f.get("impact"),
                 action_text=f["action_text"],
+                document_family=f.get("document_family"),
+                analyzer_type=f.get("analyzer_type"),
             )
             for f in findings
         )
@@ -31,3 +33,17 @@ class FindingRepository:
             select(Finding).where(Finding.document_id == document_id).order_by(Finding.id)
         )
         return list(result.scalars().all())
+
+    async def list_with_clause_text(
+        self, document_id: int
+    ) -> list[tuple[Finding, str | None]]:
+        """Single JOIN query — findings + their clause text in one round-trip."""
+        from app.models.clause import Clause
+
+        result = await self.db.execute(
+            select(Finding, Clause.normalized_text)
+            .outerjoin(Clause, Finding.clause_id == Clause.id)
+            .where(Finding.document_id == document_id)
+            .order_by(Finding.id)
+        )
+        return list(result.all())
