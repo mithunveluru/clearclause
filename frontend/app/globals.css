@@ -12,14 +12,14 @@
     font-feature-settings: "cv02", "cv03", "cv04", "ss01";
   }
   ::selection {
-    background: rgba(10, 93, 214, 0.12);
+    background: rgba(79, 70, 229, 0.14);
   }
 }
 
 @layer components {
-  /* Typography scale — typography does the visual work. */
+  /* Typography scale — typography carries the design. */
   .t-display {
-    @apply text-[clamp(2.6rem,6vw,4.5rem)] font-semibold leading-[1.04] tracking-tighter;
+    @apply text-[clamp(2.7rem,6vw,4.75rem)] font-semibold leading-[1.03] tracking-tighter;
   }
   .t-headline {
     @apply text-[clamp(1.75rem,3.5vw,2.5rem)] font-semibold leading-[1.1] tracking-tight;
@@ -34,7 +34,7 @@
     @apply text-[0.8125rem] font-medium tracking-tight text-ink-3;
   }
   .eyebrow {
-    @apply text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-ink-3;
+    @apply text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-brand;
   }
   .hairline {
     @apply border border-line;
@@ -43,6 +43,12 @@
     @apply rounded-2xl border border-line bg-surface shadow-soft;
   }
   .field {
-    @apply h-11 w-full rounded-xl border border-line bg-surface px-4 text-[0.9375rem] text-ink outline-none transition-[box-shadow,border-color] duration-200 placeholder:text-ink-3 focus:border-accent/40 focus:ring-4 focus:ring-accent/10;
+    @apply h-11 w-full rounded-xl border border-line bg-surface px-4 text-[0.9375rem] text-ink outline-none transition-[box-shadow,border-color] duration-200 placeholder:text-ink-3 focus:border-brand/50 focus:ring-4 focus:ring-brand/[0.12];
+  }
+  /* Subtle indigo aurora for hero surfaces. */
+  .aurora {
+    background:
+      radial-gradient(60% 80% at 15% 0%, rgba(99, 102, 241, 0.10), transparent 60%),
+      radial-gradient(50% 70% at 95% 10%, rgba(79, 70, 229, 0.08), transparent 55%);
   }
 }
