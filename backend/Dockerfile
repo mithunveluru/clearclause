@@ -2,7 +2,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# System deps for OCR (Phase 4) added here so backend + worker share one image.
+# OCR system deps; shared by backend + worker images
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
     poppler-utils \

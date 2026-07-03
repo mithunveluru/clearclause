@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Seed the demo workspace with the 6 sample documents (renders them to images
-# and uploads via the API — analysis starts automatically).
+# Seed the demo workspace: render the 6 sample docs to images and upload them.
 set -euo pipefail
 docker compose exec -T backend python scripts/seed.py

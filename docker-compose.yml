@@ -1,5 +1,4 @@
-# Core services for local dev. Observability stack (otel/grafana/prometheus/
-# loki/tempo) is added in Phase 11 via docker-compose.obs.yml under infra/.
+# Core dev services; observability stack lives in infra/docker-compose.obs.yml.
 # ponytail: single root compose so the spec's `docker compose up` works as-is.
 
 services:
@@ -16,8 +15,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    # No host port: app reaches it as `db:5432` internally. Use
-    # `docker compose exec db psql -U $POSTGRES_USER $POSTGRES_DB` for a shell.
+    # no host port; reachable internally as `db:5432`
 
   redis:
     image: redis:7-alpine
@@ -26,8 +24,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    # No host port: app reaches it as `redis:6379` internally.
-    # Use `docker compose exec redis redis-cli` for a shell.
+    # no host port; reachable internally as `redis:6379`
 
   backend:
     build: ./backend
@@ -76,7 +73,7 @@ services:
     ports:
       - "3000:3000"
 
-  # ---- AI profile (opt-in): docker compose --profile ai up ----
+  # AI profile (opt-in): docker compose --profile ai up
   qdrant:
     image: qdrant/qdrant:v1.12.4
     profiles: ["ai"]
