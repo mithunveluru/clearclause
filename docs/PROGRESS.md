@@ -1,6 +1,6 @@
 # ClearClause — Implementation Progress
 
-Source of truth: `ClearClause-Claude.md`. One row per phase; checked when its
+Source of truth: the implementation plan. One row per phase; checked when its
 Definition of Done is met.
 
 | Phase | Title | Status | Notes |

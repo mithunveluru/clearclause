@@ -57,6 +57,15 @@ async def add_security_headers(request: Request, call_next) -> Response:
     response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers.setdefault("X-XSS-Protection", "1; mode=block")
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
+        "font-src 'self'; frame-ancestors 'none'; base-uri 'none'",
+    )
+    if settings.COOKIE_SECURE:  # HTTPS only
+        response.headers.setdefault(
+            "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+        )
     return response
 
 

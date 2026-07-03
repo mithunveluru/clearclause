@@ -27,7 +27,6 @@ from app.repositories.report_repo import ReportRepository
 from app.repositories.score_repo import ScoreRepository
 from app.repositories.ai_output_repo import AIOutputRepository
 from app.repositories.chunk_repo import ChunkRepository
-from app.repositories.entity_repo import EntityRepository
 from app.services.ai_summary_service import AISummaryService
 from app.services.analyzer_service import AnalyzerService
 from app.services.chunk_service import ChunkService
