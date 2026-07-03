@@ -1,6 +1,5 @@
-# Observability stack. Run alongside the core stack:
-#   docker compose -f docker-compose.yml -f infra/docker-compose.obs.yml up
-# Paths are relative to the repo root (first -f file).
+# Observability stack; run with: docker compose -f docker-compose.yml -f infra/docker-compose.obs.yml up
+# paths are relative to the repo root (first -f file)
 
 services:
   # Point app + worker at the collector (overrides the empty default in .env).
