@@ -189,9 +189,12 @@ export function QuestionsView({
           </form>
         </>
       ) : (
-        <p className="rounded-xl border border-line bg-canvas px-4 py-4 t-body text-ink-3">
-          Q&amp;A will be available once document indexing is complete.
-        </p>
+        <div className="flex items-center gap-3 rounded-xl border border-line bg-canvas px-4 py-4">
+          <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-brand" />
+          <p className="t-body text-ink-3">
+            Generating embeddings — Q&amp;A turns on automatically in a few seconds.
+          </p>
+        </div>
       )}
     </m.div>
   );

@@ -24,7 +24,9 @@ import { TimelineView } from "@/components/explorer/TimelineView";
 import { Container, Surface } from "@/components/ui/Surface";
 import { TopBar } from "@/components/ui/TopBar";
 
-const TERMINAL = new Set(["report_ready", "failed"]);
+// Q&A lags report_ready by the embed stage
+const fullyReady = (d: Doc) =>
+  d.status === "failed" || (d.status === "report_ready" && d.qa_ready);
 
 export default function DocumentDetail() {
   const router = useRouter();
@@ -49,31 +51,31 @@ export default function DocumentDetail() {
   }, [doc?.original_filename]);
 
   useEffect(() => {
-    getDocument(docId)
-      .then(async (d) => {
-        setDoc(d);
-        if (d.status === "report_ready") await loadExplorer();
-      })
-      .catch(() => router.push("/dashboard"));
-  }, [router, docId, loadExplorer]);
+    getDocument(docId).then(setDoc).catch(() => router.push("/dashboard"));
+  }, [router, docId]);
 
   useEffect(() => {
-    if (!doc || TERMINAL.has(doc.status)) return;
+    if (doc?.status === "report_ready" && !explorer) loadExplorer();
+  }, [doc?.status, explorer, loadExplorer]);
+
+  useEffect(() => {
+    if (!doc || fullyReady(doc)) return;
     // Backoff: 2.5 → 3.5 → 5 → 7.5 → 10s cap
     const DELAYS = [2500, 3500, 5000, 7500, 10000];
     let tick = 0;
+    let afterReport = 0;
     let id: ReturnType<typeof setTimeout>;
     const poll = async () => {
       const d = await getDocument(docId);
       setDoc(d);
-      if (d.status === "report_ready") { await loadExplorer(); return; }
-      if (!TERMINAL.has(d.status)) {
-        id = setTimeout(poll, DELAYS[Math.min(tick++, DELAYS.length - 1)]);
-      }
+      if (fullyReady(d)) return;
+      // Stop if embeddings never arrive
+      if (d.status === "report_ready" && ++afterReport > 12) return;
+      id = setTimeout(poll, DELAYS[Math.min(tick++, DELAYS.length - 1)]);
     };
     id = setTimeout(poll, DELAYS[0]);
     return () => clearTimeout(id);
-  }, [doc?.status, docId, loadExplorer]);
+  }, [doc?.status, doc?.qa_ready, docId]);
 
   if (!doc) {
     return (

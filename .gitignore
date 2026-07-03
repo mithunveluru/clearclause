@@ -26,4 +26,7 @@ storage/reports/*
 
 # Claude Code local
 .claude/
-*.node_modules  
+
+# Build / runtime artifacts
+*.tsbuildinfo
+backend/celerybeat-schedule
