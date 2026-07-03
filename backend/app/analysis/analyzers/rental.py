@@ -74,8 +74,7 @@ class RentalAnalyzer(BaseAnalyzer):
             keys.append("one_sided_termination")
         if not ("terminat" in low or "vacate" in low or "exit" in low):
             keys.append("missing_exit_clause")
-        # Check for a cap only within the sentence that mentions the increase,
-        # not anywhere in the document (a stray '%' elsewhere must not suppress it).
+        # look for a cap only in the increase sentence; a stray '%' elsewhere must not suppress
         sentences = re.split(r"(?<=[.;])\s+|\n", low)
         inc_sentence = next(
             (s for s in sentences if any(k in s for k in ("increase", "revis", "escalat"))),

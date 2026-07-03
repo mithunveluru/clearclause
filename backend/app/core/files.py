@@ -5,8 +5,7 @@ from app.core.config import settings
 
 ALLOWED_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg"}
 
-# Magic-byte signatures -> source_type. We sniff content rather than trust the
-# extension, since the upload boundary must not believe the client.
+# sniff magic bytes, not the extension — never trust the client at the upload boundary
 _MAGIC = (
     (b"%PDF", "pdf"),
     (b"\x89PNG\r\n\x1a\n", "image"),

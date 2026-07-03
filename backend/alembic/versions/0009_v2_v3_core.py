@@ -19,18 +19,18 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # ---- documents columns ----
+    # documents columns
     op.add_column("documents", sa.Column("classified_type", sa.String(length=40), nullable=True))
     op.add_column("documents", sa.Column("document_family", sa.String(length=20), nullable=True))
     op.add_column("documents", sa.Column("analysis_version", sa.Integer(), nullable=False, server_default="1"))
     op.add_column("documents", sa.Column("qa_ready", sa.Boolean(), nullable=False, server_default=sa.false()))
     op.add_column("documents", sa.Column("ai_summary_ready", sa.Boolean(), nullable=False, server_default=sa.false()))
 
-    # ---- findings columns ----
+    # findings columns
     op.add_column("findings", sa.Column("document_family", sa.String(length=20), nullable=True))
     op.add_column("findings", sa.Column("analyzer_type", sa.String(length=40), nullable=True))
 
-    # ---- document_classifications ----
+    # document_classifications
     op.create_table(
         "document_classifications",
         sa.Column("id", sa.Integer(), primary_key=True),
@@ -43,7 +43,7 @@ def upgrade() -> None:
     )
     op.create_index("ix_document_classifications_document_id", "document_classifications", ["document_id"])
 
-    # ---- document_entities ----
+    # document_entities
     op.create_table(
         "document_entities",
         sa.Column("id", sa.Integer(), primary_key=True),
@@ -57,7 +57,7 @@ def upgrade() -> None:
     )
     op.create_index("ix_document_entities_document_id", "document_entities", ["document_id"])
 
-    # ---- analyzer_runs ----
+    # analyzer_runs
     op.create_table(
         "analyzer_runs",
         sa.Column("id", sa.Integer(), primary_key=True),
@@ -71,7 +71,7 @@ def upgrade() -> None:
     )
     op.create_index("ix_analyzer_runs_document_id", "analyzer_runs", ["document_id"])
 
-    # ---- document_chunks ----
+    # document_chunks
     op.create_table(
         "document_chunks",
         sa.Column("id", sa.Integer(), primary_key=True),
@@ -86,7 +86,7 @@ def upgrade() -> None:
     )
     op.create_index("ix_document_chunks_document_id", "document_chunks", ["document_id"])
 
-    # ---- ai_outputs ----
+    # ai_outputs
     op.create_table(
         "ai_outputs",
         sa.Column("id", sa.Integer(), primary_key=True),
