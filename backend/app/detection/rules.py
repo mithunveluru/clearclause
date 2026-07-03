@@ -66,8 +66,7 @@ RULES = [
     for (t, p, s, c, e, a) in _RAW
 ]
 
-# Document-level: a clear total-cost disclosure should be present. Its ABSENCE
-# is the finding, so this is checked once over the whole document.
+# doc-level: the finding is the ABSENCE of a total-cost disclosure, checked once
 DISCLOSURE_RE = re.compile(
     r"\b(apr|annual\s+percentage\s+rate|total\s+(amount|cost)\s+payable"
     r"|total\s+repayment|effective\s+(annual\s+)?interest\s+rate)\b",

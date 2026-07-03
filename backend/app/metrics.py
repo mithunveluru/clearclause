@@ -8,8 +8,7 @@ _inst: dict = {}
 def _instruments() -> dict:
     if not _inst:
         m = get_meter("clearclause.platform")
-        # Names omit the unit/_total suffix — the Prometheus exporter appends them
-        # (-> clearclause_stage_duration_seconds_bucket, ..._classified_total, etc.).
+        # names omit the unit/_total suffix; the Prometheus exporter appends it
         _inst["stage"] = m.create_histogram(
             "clearclause_stage_duration", unit="s", description="Pipeline stage duration",
         )

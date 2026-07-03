@@ -25,8 +25,7 @@ class Settings(BaseSettings):
     TRUSTED_PROXY_DEPTH: int = 0      # 1 for nginx/Traefik, 0 for direct
     METRICS_TOKEN: str = ""           # non-empty enables /internal/metrics with token auth
 
-    # Classification routing thresholds.
-    # auto: proceed immediately; confirm: surface alternatives to user; manual: require user pick.
+    # routing thresholds: auto proceeds, confirm surfaces alternatives, manual needs a pick
     CLASSIFICATION_AUTO_THRESHOLD: float = 0.90
     CLASSIFICATION_CONFIRM_THRESHOLD: float = 0.70
 

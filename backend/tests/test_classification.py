@@ -7,7 +7,7 @@ from app.core.constants import ClassifiedType, DocumentFamily
 
 clf = RuleBasedClassifier()
 
-# ── Happy-path cases (one per type) ──────────────────────────────────────────
+# Happy-path cases (one per type)
 
 CASES: dict[str, str] = {
     ClassifiedType.LOAN: (
@@ -153,7 +153,7 @@ def test_family_mapping():
     assert clf.classify(CASES[ClassifiedType.INVOICE]).document_family == DocumentFamily.GENERAL
 
 
-# ── Confidence and routing_action ─────────────────────────────────────────────
+# Confidence and routing_action
 
 def test_high_confidence_routes_auto():
     r = clf.classify(CASES[ClassifiedType.LOAN])
@@ -178,7 +178,7 @@ def test_routing_action_thresholds():
     assert _routing_action(0.20) == "manual"
 
 
-# ── Secondary candidates ──────────────────────────────────────────────────────
+# Secondary candidates
 
 def test_secondary_candidates_returned():
     r = clf.classify(CASES[ClassifiedType.LOAN])
@@ -199,7 +199,7 @@ def test_ambiguous_doc_has_candidates():
     )
 
 
-# ── Partial-match path: confirm not UNKNOWN ───────────────────────────────────
+# Partial-match path: confirm not UNKNOWN
 
 def test_partial_match_routes_confirm_not_unknown():
     # "receipt" alone scores 2 — should suggest receipt with confirm, not UNKNOWN/manual
@@ -209,7 +209,7 @@ def test_partial_match_routes_confirm_not_unknown():
     ), f"Partial match should not immediately return UNKNOWN/manual; got {r.classified_type!r}"
 
 
-# ── Filename hint tests ───────────────────────────────────────────────────────
+# Filename hint tests
 
 def test_filename_hint_payslip():
     r = clf.classify("Paid amount: Rs 5,000. Date: 01-Jun-2026.", filename="payslip_june_2026.pdf")
@@ -233,7 +233,7 @@ def test_filename_hint_tax_form16():
     assert r.classified_type == ClassifiedType.TAX_DOCUMENT
 
 
-# ── Edge cases and misclassification-prone scenarios ─────────────────────────
+# Edge cases and misclassification-prone scenarios
 
 def test_single_weak_keyword_routes_not_auto():
     r = clf.classify("We are pleased to inform you the rent is payable annually.")
@@ -356,7 +356,7 @@ def test_research_paper_not_confused_with_legal():
     )
 
 
-# ── Signal coverage ───────────────────────────────────────────────────────────
+# Signal coverage
 
 def test_all_types_have_minimum_signals():
     for doc_type, signals in SIGNALS.items():
