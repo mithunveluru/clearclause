@@ -1,30 +1,31 @@
 from fastapi import HTTPException, status
 
-from app.core import files
+from app.core import files, storage
 from app.models.document import Document
 from app.repositories.document_repo import DocumentRepository
 from app.repositories.report_repo import ReportRepository
 
 
 class DocumentService:
-    def __init__(self, repo: DocumentRepository):
+    def __init__(self, repo: DocumentRepository, store: storage.Storage | None = None):
         self.repo = repo
+        self.store = store or storage.get_storage()
 
     async def upload(self, user_id: int, filename: str, content: bytes) -> Document:
         try:
             ext = files.validate_extension(filename)
             source_type = files.detect_source_type(content)
+            if source_type == "pdf":
+                # Counting pages needs the bytes on disk. Inspect a throwaway copy, so
+                # a rejected upload never reaches storage in the first place.
+                with storage.temp_file(content, ext) as path:
+                    files.validate_pdf_pages(path)
         except ValueError as e:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=str(e))
-        path = files.save_upload(content, ext)
-        if source_type == "pdf":
-            # Needs the file on disk to count pages; clean up if it's over the cap.
-            try:
-                files.validate_pdf_pages(path)
-            except ValueError as e:
-                files.delete_file(path)
-                raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=str(e))
-        return await self.repo.create(user_id, filename, path, source_type)
+
+        key = storage.new_key("uploads", ext)
+        self.store.put(key, content)
+        return await self.repo.create(user_id, filename, key, source_type)
 
     async def list_documents(self, user_id: int) -> list[Document]:
         return await self.repo.list_for_user(user_id)
@@ -39,9 +40,9 @@ class DocumentService:
 
     async def delete(self, doc_id: int, user_id: int) -> None:
         doc = await self.get(doc_id, user_id)
-        # Remove the report file too (the DB row cascades, the file would orphan).
+        # Remove the report object too (the DB row cascades, the object would orphan).
         report = await ReportRepository(self.repo.db).get(doc_id)
         if report and report.pdf_path:
-            files.delete_file(report.pdf_path)
-        files.delete_file(doc.file_path)
+            self.store.delete(report.pdf_path)
+        self.store.delete(doc.file_path)
         await self.repo.delete(doc)

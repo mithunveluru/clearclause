@@ -1,5 +1,4 @@
 import os
-import uuid
 
 from pdf2image import pdfinfo_from_path
 
@@ -44,24 +43,3 @@ def validate_pdf_pages(path: str) -> int:
             f"PDF has {pages} pages; the limit is {settings.MAX_PDF_PAGES}"
         )
     return pages
-
-
-def save_upload(content: bytes, ext: str) -> str:
-    """Write bytes under a random name; never reuse the client filename in a path."""
-    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-    path = os.path.join(settings.UPLOAD_DIR, f"{uuid.uuid4().hex}{ext}")
-    with open(path, "wb") as f:
-        f.write(content)
-    return path
-
-
-def new_report_path() -> str:
-    os.makedirs(settings.REPORT_DIR, exist_ok=True)
-    return os.path.join(settings.REPORT_DIR, f"{uuid.uuid4().hex}.pdf")
-
-
-def delete_file(path: str) -> None:
-    try:
-        os.remove(path)
-    except FileNotFoundError:
-        pass

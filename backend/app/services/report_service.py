@@ -1,4 +1,4 @@
-from app.core import files
+from app.core import storage
 from app.reporting import build_pdf, build_summary
 from app.repositories.clause_repo import ClauseRepository
 from app.repositories.document_repo import DocumentRepository
@@ -16,7 +16,9 @@ class ReportService:
         findings: FindingRepository,
         scores: ScoreRepository,
         reports: ReportRepository,
+        store: storage.Storage | None = None,
     ):
+        self.store = store or storage.get_storage()
         self.documents = documents
         self.clauses = clauses
         self.findings = findings
@@ -79,6 +81,12 @@ class ReportService:
             },
         )
 
-        pdf_path = build_pdf(summary, files.new_report_path())
-        await self.reports.save(document_id, summary, pdf_path)
+        # reportlab writes to a path; render locally, then hand the bytes to storage.
+        key = storage.new_key("reports", ".pdf")
+        with storage.temp_file(b"", ".pdf") as tmp:
+            build_pdf(summary, tmp)
+            with open(tmp, "rb") as f:
+                self.store.put(key, f.read())
+
+        await self.reports.save(document_id, summary, key)
         return summary

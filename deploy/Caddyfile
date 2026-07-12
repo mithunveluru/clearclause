@@ -1,0 +1,35 @@
+# TLS is terminated here. Caddy provisions and renews Let's Encrypt certificates
+# automatically, which is the whole reason it is preferred over hand-rolled nginx.
+#
+# The app sits behind exactly one proxy hop, so the backend must run with
+# TRUSTED_PROXY_DEPTH=1 — otherwise every request looks like it came from Caddy's
+# IP and one user's traffic rate-limits everybody.
+
+{$DOMAIN} {
+	encode gzip zstd
+
+	# HSTS. The app also sets this itself when COOKIE_SECURE=true; belt and braces.
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
+	reverse_proxy frontend:3000
+}
+
+{$API_DOMAIN} {
+	encode gzip zstd
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
+	# Uploads are capped at MAX_UPLOAD_MB (10) in the app; reject oversized bodies at
+	# the edge so they never occupy an application worker.
+	request_body {
+		max_size 12MB
+	}
+
+	reverse_proxy backend:8000
+}
