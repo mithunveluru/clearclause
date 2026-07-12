@@ -16,3 +16,8 @@ class OCRProvider(ABC):
     @abstractmethod
     def extract(self, file_path: str) -> list[dict]:
         ...
+
+    def extract_page(self, file_path: str, page_number: int) -> list[dict]:
+        """Blocks for a single 1-based PDF page. Providers that can fall back to
+        another engine per page rely on this; the default has no page granularity."""
+        raise NotImplementedError
