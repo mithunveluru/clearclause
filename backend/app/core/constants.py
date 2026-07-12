@@ -96,3 +96,9 @@ FAMILY_OF = {
     ClassifiedType.OTHER: DocumentFamily.GENERAL,
 }
 
+
+
+def humanize(slug: str) -> str:
+    """"hidden_fee" -> "Hidden Fee". Internal identifiers must never reach a reader —
+    they leaked verbatim into the AI summary ("* hidden_fee * prepayment_penalty")."""
+    return slug.replace("_", " ").title()

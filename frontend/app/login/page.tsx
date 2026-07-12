@@ -45,6 +45,8 @@ export default function LoginPage() {
               className="field"
               type="email"
               required
+              aria-label="Email"
+              autoComplete="email"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -53,6 +55,8 @@ export default function LoginPage() {
               className="field"
               type="password"
               required
+              aria-label="Password"
+              autoComplete="current-password"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

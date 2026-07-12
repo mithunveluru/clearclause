@@ -1,11 +1,6 @@
-import re
 
 from app.contracts import Entity
-
-_AMOUNT = re.compile(
-    r"(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d+)?)|([\d,]+(?:\.\d+)?)\s*(?:rupees|percent|%)",
-    re.I,
-)
+from app.entities.extractors._util import AMOUNT, amount_with_unit
 
 # entity_type -> keyword that anchors the value
 _SPECS = [
@@ -26,12 +21,12 @@ class LoanEntityExtractor:
             if idx < 0:
                 continue
             window = text[idx : idx + 70]
-            m = _AMOUNT.search(window)
+            m = AMOUNT.search(window)
             if m:
                 out.append(
                     Entity(
                         entity_type=entity_type,
-                        entity_value=(m.group(1) or m.group(2)),
+                        entity_value=amount_with_unit(m),
                         confidence=0.7,
                         source_text=window.strip(),
                     )

@@ -46,6 +46,8 @@ export default function RegisterPage() {
               className="field"
               type="email"
               required
+              aria-label="Email"
+              autoComplete="email"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -55,6 +57,8 @@ export default function RegisterPage() {
               type="password"
               required
               minLength={8}
+              aria-label="Password"
+              autoComplete="new-password"
               placeholder="Password (min 8 characters)"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

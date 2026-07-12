@@ -4,6 +4,7 @@ import json
 import time
 
 from app.ai.summarizer import AISummarizer
+from app.core.constants import humanize
 from app.metrics import record_ai
 from app.repositories.ai_output_repo import AIOutputRepository
 from app.repositories.document_repo import DocumentRepository
@@ -44,11 +45,11 @@ class AISummaryService:
             "score": risk.total_score if risk else None,
             "band": band(risk.total_score) if risk else None,
             "findings": [
-                {"issue": f.issue_type, "severity": f.severity, "explanation": f.explanation}
+                {"issue": humanize(f.issue_type), "severity": f.severity, "explanation": f.explanation}
                 for f in finding_rows[:8]
             ],
             "entities": [
-                {"type": e.entity_type, "value": e.entity_value} for e in entity_rows[:10]
+                {"type": humanize(e.entity_type), "value": e.entity_value} for e in entity_rows[:10]
             ],
             "cost": {
                 "headline_rate": cost.headline_rate if cost else None,
