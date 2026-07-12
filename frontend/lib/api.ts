@@ -14,32 +14,6 @@ export type Doc = {
   created_at: string;
 };
 
-export type Finding = {
-  id: number;
-  clause_id: number | null;
-  issue_type: string;
-  severity: string;
-  confidence: number;
-  explanation: string;
-  impact: string | null;
-  action_text: string;
-  clause_text: string | null;
-};
-
-export type Score = {
-  total_score: number;
-  band: string;
-  summary: string;
-  breakdown: {
-    fee_opacity: number;
-    penalty: number;
-    renewal: number;
-    consent: number;
-    cancellation: number;
-  };
-  cost: Record<string, number | null>;
-};
-
 export type AISummary = { content: string; model: string | null; created_at: string };
 
 export type Citation = { page: number | null; section: string | null; snippet: string };
