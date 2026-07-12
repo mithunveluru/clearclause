@@ -93,7 +93,7 @@ export function QuestionsView({
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <h2 className="mb-1 text-[1.375rem] font-bold tracking-tight">Questions to Ask</h2>
+      <h2 className="mb-1 text-[1.375rem] font-semibold tracking-tight">Questions to Ask</h2>
       <p className="mb-6 t-body text-ink-2">
         Ask these before signing. Every answer is grounded in the document with citations.
       </p>
@@ -174,6 +174,7 @@ export function QuestionsView({
           >
             <input
               className="field flex-1"
+              aria-label="Ask a question about this document"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="e.g. Can I cancel this agreement early?"

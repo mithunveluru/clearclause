@@ -25,9 +25,6 @@ storage/reports/*
 # Misc
 .DS_Store
 
-# Claude Code local
-.claude/
-
 # Build / runtime artifacts
 *.tsbuildinfo
 backend/celerybeat-schedule

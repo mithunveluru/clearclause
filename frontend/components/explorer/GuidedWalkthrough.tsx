@@ -1,7 +1,7 @@
 "use client";
 import { m } from "framer-motion";
-import { ArrowLeft, ArrowRight, X } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, ArrowRight, Lightbulb, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import type { WalkthroughStep } from "@/lib/api";
 
 export function GuidedWalkthrough({
@@ -20,6 +20,12 @@ export function GuidedWalkthrough({
   function next() {
     if (isLast) { onClose(); } else { setIdx((i) => i + 1); }
   }
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-4">
@@ -51,17 +57,17 @@ export function GuidedWalkthrough({
           {steps.map((_, i) => (
             <span
               key={i}
-              className="h-1 flex-1 rounded-full transition-all"
-              style={{ backgroundColor: i <= idx ? "var(--color-brand)" : "var(--color-line)" }}
+              className={`h-1 flex-1 rounded-full transition-colors duration-300 ${i <= idx ? "bg-brand" : "bg-line"}`}
             />
           ))}
         </div>
 
         <p className="t-caption mb-1">Step {idx + 1} of {steps.length}</p>
-        <h3 className="text-[1.25rem] font-bold tracking-tight mb-2">{step.title}</h3>
+        <h3 className="text-[1.25rem] font-semibold tracking-tight mb-2">{step.title}</h3>
         <p className="t-body text-ink-2 mb-4">{step.description}</p>
-        <div className="rounded-xl border border-line bg-canvas px-4 py-3 text-[0.875rem] leading-relaxed text-ink">
-          💡 {step.insight}
+        <div className="flex items-start gap-2.5 rounded-xl border border-line bg-canvas px-4 py-3 text-[0.875rem] leading-relaxed text-ink">
+          <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} aria-hidden />
+          {step.insight}
         </div>
 
         <div className="mt-6 flex items-center gap-2">

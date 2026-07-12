@@ -129,8 +129,9 @@ export function ClauseCard({
       )}
 
       {clause.page_number != null && mode !== "professional" && (
-        <p className="mt-3 text-[0.8125rem] text-ink-3">
-          📄 Source: page {clause.page_number}
+        <p className="mt-3 flex items-center gap-1.5 text-[0.8125rem] text-ink-3">
+          <FileText className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
+          Source: page {clause.page_number}
         </p>
       )}
     </m.div>

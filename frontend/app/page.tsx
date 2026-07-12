@@ -1,8 +1,10 @@
 "use client";
 import { m } from "framer-motion";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, Lock } from "lucide-react";
+import Link from "next/link";
 import { ButtonLink } from "@/components/ui/Button";
 import { HeroPreview } from "@/components/HeroPreview";
+import { WorkflowStory } from "@/components/WorkflowStory";
 import { Container } from "@/components/ui/Surface";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { TopBar } from "@/components/ui/TopBar";
@@ -17,21 +19,6 @@ const CHECKS = [
   "Bundled insurance & add-ons",
   "Assumed or implied consent",
   "Missing total-cost disclosure",
-];
-
-const STEPS = [
-  {
-    title: "Upload your document",
-    body: "Drop a PDF or photo of any loan or subscription agreement. Nothing else to set up.",
-  },
-  {
-    title: "It analyzes automatically",
-    body: "ClearClause reads every clause, flags the risks, and estimates the true cost — no buttons, no waiting on you.",
-  },
-  {
-    title: "Get a clear report",
-    body: "See a risk score, the exact risky clauses in plain English, and a professional PDF you can keep or share.",
-  },
 ];
 
 const TRUST = [
@@ -95,6 +82,15 @@ export default function Home() {
                   View a sample report
                 </ButtonLink>
               </m.div>
+              <m.p
+                className="mt-6 flex items-center justify-center gap-1.5 text-[0.8125rem] text-ink-3"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.35, duration: 0.55, ease: easeSmooth }}
+              >
+                <Lock className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+                Your documents stay private · every finding cites the exact clause
+              </m.p>
             </m.div>
 
             <HeroPreview />
@@ -103,42 +99,7 @@ export default function Home() {
 
         <Container className="pb-32">
           <m.div
-            className="mx-auto max-w-3xl rounded-3xl border border-line bg-surface px-8 py-12 shadow-raised sm:px-14"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.6, ease: easeSmooth }}
-          >
-            <p className="eyebrow text-center">Comprehensive review</p>
-            <h2 className="t-headline mt-3 text-center text-[1.75rem]">
-              Every clause, checked for traps
-            </h2>
-            <m.ul
-              className="mx-auto mt-10 grid max-w-xl grid-cols-1 gap-x-10 gap-y-1 sm:grid-cols-2"
-              variants={staggerContainer}
-              initial="initial"
-              whileInView="animate"
-              viewport={{ once: true }}
-            >
-              {CHECKS.map((c) => (
-                <m.li
-                  key={c}
-                  variants={staggerItem}
-                  className="flex items-center gap-3 py-2.5 text-[0.9375rem] text-ink"
-                >
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand text-white">
-                    <Check className="h-2.5 w-2.5" strokeWidth={3} />
-                  </span>
-                  {c}
-                </m.li>
-              ))}
-            </m.ul>
-          </m.div>
-        </Container>
-
-        <Container className="pb-28">
-          <m.div
-            className="mx-auto max-w-3xl"
+            className="mx-auto max-w-4xl"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
@@ -148,24 +109,52 @@ export default function Home() {
             <h2 className="t-headline mt-3 text-center text-[1.75rem]">
               From upload to answers in seconds
             </h2>
+            <div className="mt-12">
+              <WorkflowStory />
+            </div>
+          </m.div>
+        </Container>
+
+        <Container className="pb-32">
+          <div className="mx-auto grid max-w-4xl items-start gap-10 lg:grid-cols-[1fr_1.15fr] lg:gap-20">
             <m.div
-              className="mt-12 grid grid-cols-1 gap-x-12 gap-y-10 sm:grid-cols-3"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 0.6, ease: easeSmooth }}
+              className="lg:sticky lg:top-28"
+            >
+              <p className="eyebrow">Comprehensive review</p>
+              <h2 className="t-headline mt-3 text-[1.75rem]">
+                Every clause, checked for traps
+              </h2>
+              <p className="t-body mt-4 text-[0.9375rem]">
+                The patterns regulators and consumer advocates flag — fees that hide,
+                penalties that bite, renewals that never end — checked against every
+                clause in your agreement.
+              </p>
+            </m.div>
+            <m.ul
+              className="divide-y divide-line border-y border-line"
               variants={staggerContainer}
               initial="initial"
               whileInView="animate"
               viewport={{ once: true }}
             >
-              {STEPS.map((s, i) => (
-                <m.div key={s.title} variants={staggerItem}>
-                  <div className="text-[2rem] font-semibold tracking-tighter text-brand/25">
-                    0{i + 1}
-                  </div>
-                  <h3 className="mt-3 text-[1.0625rem] font-semibold tracking-tight">{s.title}</h3>
-                  <p className="mt-2 text-[0.9375rem] leading-relaxed text-ink-2">{s.body}</p>
-                </m.div>
+              {CHECKS.map((c) => (
+                <m.li
+                  key={c}
+                  variants={staggerItem}
+                  className="flex items-center gap-3 py-3.5 text-[0.9375rem] text-ink"
+                >
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand text-white">
+                    <Check className="h-2.5 w-2.5" strokeWidth={3} />
+                  </span>
+                  {c}
+                </m.li>
               ))}
-            </m.div>
-          </m.div>
+            </m.ul>
+          </div>
         </Container>
 
         <Container className="pb-32">
@@ -200,11 +189,34 @@ export default function Home() {
         </Container>
 
         <footer className="border-t border-line">
-          <Container className="flex flex-col items-center justify-between gap-3 py-8 sm:flex-row">
-            <span className="t-caption">© {new Date().getFullYear()} ClearClause</span>
-            <span className="t-caption">
-              Informational analysis only — not legal or financial advice.
-            </span>
+          <Container className="py-8">
+            <nav
+              aria-label="Legal"
+              className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 sm:justify-start"
+            >
+              {[
+                ["Terms", "/legal/terms"],
+                ["Privacy", "/legal/privacy"],
+                ["AI Disclaimer", "/legal/ai-disclaimer"],
+                ["Security", "/legal/security"],
+                ["Cookies", "/legal/cookies"],
+                ["Contact", "/legal/contact"],
+              ].map(([label, href]) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="text-[0.8125rem] font-medium text-ink-2 transition hover:text-ink"
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
+            <div className="mt-5 flex flex-col items-center justify-between gap-3 sm:flex-row">
+              <span className="t-caption">© {new Date().getFullYear()} ClearClause</span>
+              <span className="t-caption">
+                Informational analysis only — not legal or financial advice.
+              </span>
+            </div>
           </Container>
         </footer>
       </PageTransition>
