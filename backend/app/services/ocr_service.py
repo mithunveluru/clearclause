@@ -4,6 +4,7 @@ import statistics
 
 from app.core import storage
 from app.core.config import settings
+from app.metrics import count_degraded
 from app.models.document import Document
 from app.ocr import OCRProvider, get_ocr_provider
 from app.repositories.block_repo import ExtractedBlockRepository
@@ -40,7 +41,9 @@ class OCRService:
         confidence = self._mean_confidence(blocks)
         if confidence is not None and confidence < settings.OCR_LOW_CONFIDENCE:
             # Garbled text produces no findings, and "no findings" renders as a clean
-            # contract. The user has to be told the scan was too poor to trust.
+            # contract. The user is warned in the UI; a spike here means something
+            # upstream is wrong, so it is a metric and not just a log line.
+            count_degraded("low_ocr_confidence")
             logger.warning(
                 "document %s: low OCR confidence %.0f — analysis may be incomplete",
                 document.id,

@@ -22,6 +22,13 @@ def _instruments() -> dict:
             "clearclause_ai_request_duration", unit="s",
             description="AI/embedding/retrieval latency, by kind",
         )
+        # The two ways this system goes quietly wrong rather than loudly down. Both
+        # were log lines only, and nobody greps logs at 3am.
+        _inst["degraded"] = m.create_counter(
+            "clearclause_degraded_events",
+            description="Silent-degradation events, by kind "
+                        "(rate_limiter_unavailable | low_ocr_confidence)",
+        )
     return _inst
 
 
@@ -39,3 +46,8 @@ def count_analyzer(analyzer: str, status: str) -> None:
 
 def record_ai(kind: str, seconds: float) -> None:
     _instruments()["ai"].record(seconds, {"kind": kind})
+
+
+def count_degraded(kind: str) -> None:
+    """Something is serving, but not correctly. Alert on this, not on the log line."""
+    _instruments()["degraded"].add(1, {"kind": kind})

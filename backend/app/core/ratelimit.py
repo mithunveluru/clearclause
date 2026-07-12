@@ -6,6 +6,7 @@ from redis.exceptions import RedisError
 
 from app.core.config import settings
 from app.core.redis import redis_client
+from app.metrics import count_degraded
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,8 @@ def rate_limit(limit: int, window: int, scope: str):
         except RedisError:
             # Fail open: a Redis outage must not take down login/upload/Q&A with it.
             # The tradeoff is that brute-force protection is absent while Redis is
-            # down, so this logs at error level — it should page, not pass quietly.
+            # down, so this must page. Counter first, log second — nobody greps logs.
+            count_degraded("rate_limiter_unavailable")
             logger.error("rate limiter unavailable (scope=%s); allowing request", scope)
             return
         if count > limit:
