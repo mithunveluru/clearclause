@@ -15,19 +15,27 @@ class TesseractOCRProvider(OCRProvider):
     def __init__(self, dpi: int = 200):
         self.dpi = dpi
 
+    def extract_page(self, file_path: str, page_number: int) -> list[dict]:
+        """OCR a single PDF page.
+
+        One page at a time: an unbounded convert_from_path() holds every page in
+        memory simultaneously (~26MB/page at 200dpi) and OOMs the worker.
+        """
+        blocks: list[dict] = []
+        for image in convert_from_path(
+            file_path, dpi=self.dpi, first_page=page_number, last_page=page_number
+        ):
+            blocks.extend(self._blocks_from_image(image, page_number))
+            image.close()
+        return blocks
+
     def extract(self, file_path: str) -> list[dict]:
         blocks: list[dict] = []
         if file_path.lower().endswith(".pdf"):
-            # One page at a time: an unbounded convert_from_path() holds every page
-            # in memory simultaneously (~26MB/page at 200dpi) and OOMs the worker.
             # MAX_PDF_PAGES is enforced at upload; re-applied here as a backstop.
             pages = min(pdfinfo_from_path(file_path)["Pages"], settings.MAX_PDF_PAGES)
             for page_number in range(1, pages + 1):
-                for image in convert_from_path(
-                    file_path, dpi=self.dpi, first_page=page_number, last_page=page_number
-                ):
-                    blocks.extend(self._blocks_from_image(image, page_number))
-                    image.close()
+                blocks.extend(self.extract_page(file_path, page_number))
         else:
             with Image.open(file_path) as image:
                 blocks.extend(self._blocks_from_image(image, 1))
