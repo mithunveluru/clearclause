@@ -11,6 +11,7 @@ import time
 from collections.abc import Awaitable, Callable
 
 from celery import chain
+from celery.exceptions import SoftTimeLimitExceeded
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import settings
@@ -39,7 +40,16 @@ from app.services.segmentation_service import SegmentationService
 from app.telemetry import get_tracer
 from app.worker.celery_app import celery_app
 
-_RETRY = dict(bind=True, autoretry_for=(Exception,), max_retries=2, retry_backoff=True)
+# Retry transient failures, but never a timeout: a document that blew the soft limit
+# will blow it again, and autoretry turned one doomed 9-minute task into three —
+# 27 minutes of worker time, during which everyone else's documents queue behind it.
+_RETRY = dict(
+    bind=True,
+    autoretry_for=(Exception,),
+    dont_autoretry_for=(SoftTimeLimitExceeded,),
+    max_retries=2,
+    retry_backoff=True,
+)
 
 
 def _session():

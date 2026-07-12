@@ -13,31 +13,6 @@ from app.ocr.base import OCRProvider
 logger = logging.getLogger(__name__)
 
 
-# OSD reports its own certainty. Below this it is guessing, and acting on a guess
-# would rotate a perfectly good page into garbage — so only act when it is sure.
-_MIN_ORIENTATION_CONFIDENCE = 2.0
-
-
-def _upright(image: Image.Image) -> Image.Image:
-    """Rotate a sideways or upside-down scan upright.
-
-    Tesseract reads horizontal text only, so a page scanned at 90 degrees OCRs to
-    nothing. OSD needs real resolution and a decent amount of text to judge
-    orientation; it raises when it cannot, which is not a failure — it means leave
-    the page alone.
-    """
-    try:
-        osd = pytesseract.image_to_osd(image, output_type=Output.DICT)
-    except Exception:  # noqa: BLE001 — OSD is best-effort; an unrotated page is fine
-        return image
-
-    angle = osd.get("rotate", 0)
-    if not angle or osd.get("orientation_conf", 0) < _MIN_ORIENTATION_CONFIDENCE:
-        return image
-    logger.info("rotating page %d degrees upright (osd confidence %.1f)", angle, osd["orientation_conf"])
-    return image.rotate(-angle, expand=True, fillcolor="white")
-
-
 class TesseractOCRProvider(OCRProvider):
     """CPU-only OCR via Tesseract. PDFs are rasterized page-by-page first."""
 
@@ -72,7 +47,6 @@ class TesseractOCRProvider(OCRProvider):
 
     @staticmethod
     def _blocks_from_image(image: Image.Image, page_number: int) -> list[dict]:
-        image = _upright(image)
         data = pytesseract.image_to_data(image, output_type=Output.DICT)
         groups: "OrderedDict[int, dict]" = OrderedDict()
         confidences: list[float] = []

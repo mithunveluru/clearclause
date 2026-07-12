@@ -1,10 +1,8 @@
 from types import SimpleNamespace
 
 import pytest
-from PIL import Image
 
 from app.ocr import get_ocr_provider
-from app.ocr import tesseract
 from app.ocr.base import OCRProvider
 from app.ocr.tesseract import TesseractOCRProvider
 from app.services.ocr_service import OCRService
@@ -13,10 +11,6 @@ from app.services.ocr_service import OCRService
 def test_factory_unknown_provider():
     with pytest.raises(ValueError):
         get_ocr_provider("does-not-exist")
-
-
-def _no_rotation(monkeypatch):
-    monkeypatch.setattr("app.ocr.tesseract._upright", lambda image: image)
 
 
 def test_blocks_grouped_by_block_num(monkeypatch):
@@ -30,7 +24,6 @@ def test_blocks_grouped_by_block_num(monkeypatch):
         "width": [60, 30, 0, 40],
         "height": [12, 12, 0, 12],
     }
-    _no_rotation(monkeypatch)
     monkeypatch.setattr(
         "app.ocr.tesseract.pytesseract.image_to_data", lambda *a, **k: fake
     )
@@ -55,7 +48,6 @@ def test_page_mean_confidence_is_reported(monkeypatch):
         "width": [60, 30, 8],
         "height": [12, 12, 12],
     }
-    _no_rotation(monkeypatch)
     monkeypatch.setattr("app.ocr.tesseract.pytesseract.image_to_data", lambda *a, **k: fake)
 
     blocks = TesseractOCRProvider._blocks_from_image(object(), page_number=1)
@@ -111,38 +103,3 @@ async def test_text_layer_documents_report_full_confidence():
         SimpleNamespace(id=1, file_path="/tmp/x.pdf")
     )
     assert docs.confidence == 100.0
-
-
-def _osd(monkeypatch, rotate, conf):
-    monkeypatch.setattr(
-        "app.ocr.tesseract.pytesseract.image_to_osd",
-        lambda *a, **k: {"rotate": rotate, "orientation_conf": conf},
-    )
-
-
-def test_confident_osd_rotates_the_page(monkeypatch):
-    _osd(monkeypatch, rotate=90, conf=9.5)
-    image = Image.new("RGB", (100, 50), "white")
-
-    out = tesseract._upright(image)
-
-    assert out.size == (50, 100), "a confidently sideways page was not rotated"
-
-
-def test_unsure_osd_leaves_the_page_alone(monkeypatch):
-    # OSD reports rotate=90 at 0.2 confidence — it is guessing. Acting on that would
-    # turn a perfectly readable page into garbage, so we must not.
-    _osd(monkeypatch, rotate=90, conf=0.2)
-    image = Image.new("RGB", (100, 50), "white")
-
-    assert tesseract._upright(image).size == (100, 50)
-
-
-def test_osd_failure_leaves_the_page_alone(monkeypatch):
-    def boom(*_a, **_kw):
-        raise RuntimeError("Too few characters to estimate orientation")
-
-    monkeypatch.setattr("app.ocr.tesseract.pytesseract.image_to_osd", boom)
-    image = Image.new("RGB", (100, 50), "white")
-
-    assert tesseract._upright(image).size == (100, 50)
