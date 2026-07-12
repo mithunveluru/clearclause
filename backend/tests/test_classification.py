@@ -1,6 +1,5 @@
 """Classification routing tests — covers all 21 document types, edge cases,
 and misclassification-prone scenarios."""
-import pytest
 
 from app.classification.classifier import SIGNALS, RuleBasedClassifier, _routing_action
 from app.core.constants import ClassifiedType, DocumentFamily
@@ -262,7 +261,7 @@ def test_vehicle_rental_not_misrouted_as_residential():
     )
     r = clf.classify(vehicle_text)
     assert r.classified_type != ClassifiedType.RENTAL_CONTRACT or r.routing_action in ("confirm", "manual"), (
-        f"Vehicle rental should not auto-route to rental_contract"
+        "Vehicle rental should not auto-route to rental_contract"
     )
 
 
