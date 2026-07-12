@@ -9,6 +9,7 @@ from app.core import storage
 from app.core.config import settings
 from app.models.document import Document
 from app.models.report import Report
+from app.services.document_service import purge_vectors
 from app.worker.celery_app import celery_app
 
 
@@ -50,6 +51,7 @@ async def _cleanup() -> dict:
             ).scalars().all()
             for d in stale:
                 store.delete(d.file_path)
+                purge_vectors(d.id)
                 await db.delete(d)  # cascades to clauses/findings/scores/reports rows
             await db.commit()
 

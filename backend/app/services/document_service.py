@@ -1,9 +1,30 @@
+import logging
+
 from fastapi import HTTPException, status
 
 from app.core import files, storage
+from app.core.config import settings
 from app.models.document import Document
 from app.repositories.document_repo import DocumentRepository
 from app.repositories.report_repo import ReportRepository
+
+logger = logging.getLogger(__name__)
+
+
+def purge_vectors(document_id: int) -> None:
+    """Best-effort removal of the document's Qdrant points (they carry chunk text).
+
+    Vectors only exist when AI_MODE is full, and deletion must not fail because the
+    optional vector store is down — the DB row and file are the source of truth.
+    """
+    if settings.AI_MODE != "full":
+        return
+    try:
+        from app.rag.store import QdrantStore
+
+        QdrantStore().delete_document(document_id)
+    except Exception:
+        logger.warning("vector purge failed for document %s", document_id, exc_info=True)
 
 
 class DocumentService:
@@ -45,4 +66,5 @@ class DocumentService:
         if report and report.pdf_path:
             self.store.delete(report.pdf_path)
         self.store.delete(doc.file_path)
+        purge_vectors(doc.id)
         await self.repo.delete(doc)
