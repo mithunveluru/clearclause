@@ -1,3 +1,5 @@
+import logging
+import statistics
 from collections import OrderedDict
 
 import pytesseract
@@ -7,6 +9,33 @@ from pytesseract import Output
 
 from app.core.config import settings
 from app.ocr.base import OCRProvider
+
+logger = logging.getLogger(__name__)
+
+
+# OSD reports its own certainty. Below this it is guessing, and acting on a guess
+# would rotate a perfectly good page into garbage — so only act when it is sure.
+_MIN_ORIENTATION_CONFIDENCE = 2.0
+
+
+def _upright(image: Image.Image) -> Image.Image:
+    """Rotate a sideways or upside-down scan upright.
+
+    Tesseract reads horizontal text only, so a page scanned at 90 degrees OCRs to
+    nothing. OSD needs real resolution and a decent amount of text to judge
+    orientation; it raises when it cannot, which is not a failure — it means leave
+    the page alone.
+    """
+    try:
+        osd = pytesseract.image_to_osd(image, output_type=Output.DICT)
+    except Exception:  # noqa: BLE001 — OSD is best-effort; an unrotated page is fine
+        return image
+
+    angle = osd.get("rotate", 0)
+    if not angle or osd.get("orientation_conf", 0) < _MIN_ORIENTATION_CONFIDENCE:
+        return image
+    logger.info("rotating page %d degrees upright (osd confidence %.1f)", angle, osd["orientation_conf"])
+    return image.rotate(-angle, expand=True, fillcolor="white")
 
 
 class TesseractOCRProvider(OCRProvider):
@@ -43,13 +72,21 @@ class TesseractOCRProvider(OCRProvider):
 
     @staticmethod
     def _blocks_from_image(image: Image.Image, page_number: int) -> list[dict]:
+        image = _upright(image)
         data = pytesseract.image_to_data(image, output_type=Output.DICT)
         groups: "OrderedDict[int, dict]" = OrderedDict()
+        confidences: list[float] = []
 
         for i in range(len(data["text"])):
             word = data["text"][i].strip()
             if not word:
                 continue
+            # Deliberately NOT dropping low-confidence words. Tesseract scores plainly
+            # legible words at 0 when it mis-segments them ("Aprocessing"), so a floor
+            # deletes real contract text — and a deleted penalty clause reads as a
+            # clean contract, which is the worst failure this product can have.
+            # Confidence is recorded instead, and a bad scan is surfaced to the user.
+            confidences.append(float(data["conf"][i]))
             key = data["block_num"][i]
             x, y = data["left"][i], data["top"][i]
             w, h = data["width"][i], data["height"][i]
@@ -61,12 +98,19 @@ class TesseractOCRProvider(OCRProvider):
                 g["x0"], g["y0"] = min(g["x0"], x), min(g["y0"], y)
                 g["x1"], g["y1"] = max(g["x1"], x + w), max(g["y1"], y + h)
 
+        if not groups:
+            # A page that yields nothing is a bad scan, not an empty page. Say so —
+            # otherwise it silently contributes no clauses and the document reads clean.
+            logger.warning("page %d produced no usable text", page_number)
+
+        confidence = statistics.mean(confidences) if confidences else 0.0
         return [
             {
                 "page_number": page_number,
                 "block_order": order,
                 "text": " ".join(g["words"]),
                 "bbox": [g["x0"], g["y0"], g["x1"] - g["x0"], g["y1"] - g["y0"]],
+                "confidence": confidence,  # page mean; how much to trust this text
             }
             for order, g in enumerate(groups.values())
         ]

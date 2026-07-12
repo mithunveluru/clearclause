@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "/storage/uploads"
     REPORT_DIR: str = "/storage/reports"
     OCR_PROVIDER: str = "auto"  # auto = PDF text layer first, OCR only scanned pages
+    OCR_LOW_CONFIDENCE: int = 60  # below this mean OCR confidence, warn the user (0-100)
     OTEL_EXPORTER_OTLP_ENDPOINT: str = ""
     MAX_UPLOAD_MB: int = 10
     MAX_PDF_PAGES: int = 50   # a 10MB PDF can hold thousands of pages; OCR memory scales with them

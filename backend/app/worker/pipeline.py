@@ -88,7 +88,7 @@ def ocr_task(self, document_id: int, user_id: int) -> None:
         doc = await DocumentRepository(db).get_for_user(document_id, user_id)
         if doc is None:
             raise ValueError(f"document {document_id} not found")
-        await OCRService(ExtractedBlockRepository(db)).process(doc)
+        await OCRService(ExtractedBlockRepository(db), DocumentRepository(db)).process(doc)
 
     asyncio.run(_run_stage(document_id, "ocr", work, DocStatus.OCR_PROCESSING, DocStatus.OCR_DONE))
 

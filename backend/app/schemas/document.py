@@ -13,6 +13,7 @@ class DocumentOut(BaseModel):
     status: str
     qa_ready: bool
     ai_summary_ready: bool
+    ocr_confidence: float | None
     created_at: datetime
 
     model_config = {"from_attributes": True}

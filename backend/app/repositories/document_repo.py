@@ -41,6 +41,14 @@ class DocumentRepository:
         )
         return result.scalar_one_or_none()
 
+    async def set_ocr_confidence(self, document_id: int, confidence: float | None) -> None:
+        await self.db.execute(
+            update(Document)
+            .where(Document.id == document_id)
+            .values(ocr_confidence=confidence)
+        )
+        await self.db.commit()
+
     async def update_status(self, document_id: int, status: str) -> None:
         await self.db.execute(
             update(Document).where(Document.id == document_id).values(status=status)

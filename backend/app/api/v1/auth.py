@@ -40,8 +40,7 @@ def _service(db: AsyncSession = Depends(get_db)) -> AuthService:
     dependencies=[Depends(rate_limit(limit=5, window=60, scope="register"))],
 )
 async def register(body: RegisterRequest, svc: AuthService = Depends(_service)):
-    # Generic response — does not reveal whether the email was already registered.
-    await svc.register(body.email, body.password)
+    await svc.register(body.email, body.password)  # 409 if the address is taken
     return {"ok": True}
 
 
