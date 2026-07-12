@@ -86,7 +86,7 @@ def get_qa_system(doc_type: str | None) -> str:
 def build_summary_prompt(ctx: dict) -> str:
     """Structured executive summary — 7 sections, output only the sections that have data."""
     lines: list[str] = [
-        f"=== INPUT DATA (use ONLY these facts) ===",
+        "=== INPUT DATA (use ONLY these facts) ===",
         f"Document Type: {ctx.get('type') or 'unknown'}",
     ]
     if ctx.get("score") is not None:

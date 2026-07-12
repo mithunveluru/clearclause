@@ -7,7 +7,9 @@ clf = get_classifier()
 
 def _analyze(ttype: str, lines: list[str]):
     a = get_analyzer(ttype)
-    ctx = AnalyzerContext(1, ttype, a.document_family, [ClauseRef(i, l) for i, l in enumerate(lines)])
+    ctx = AnalyzerContext(
+        1, ttype, a.document_family, [ClauseRef(i, line) for i, line in enumerate(lines)]
+    )
     return a.analyze(ctx)
 
 

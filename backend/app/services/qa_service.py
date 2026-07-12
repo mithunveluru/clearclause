@@ -112,7 +112,11 @@ class QAService:
                 "Generate follow-up questions only. No preamble.",
             )
             # Parse numbered list: "1. ...\n2. ...\n3. ..."
-            lines = [re.sub(r"^\d+[\.\)]\s*", "", l).strip() for l in raw.splitlines() if l.strip()]
-            return [l for l in lines if len(l) > 10][:3]
+            lines = [
+                re.sub(r"^\d+[\.\)]\s*", "", line).strip()
+                for line in raw.splitlines()
+                if line.strip()
+            ]
+            return [line for line in lines if len(line) > 10][:3]
         except Exception:  # noqa: BLE001 — follow-ups are optional
             return []
