@@ -139,7 +139,7 @@ export default function Dashboard() {
                       ) : (
                         <Link
                           href={`/documents/${d.id}`}
-                          className="flex items-center gap-4 px-6 py-[18px] transition-colors hover:bg-brand/[0.025]"
+                          className="flex items-center gap-4 px-6 py-[18px] transition-colors hover:bg-brand/[0.025] focus-visible:bg-brand/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand/30"
                         >
                           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand/[0.06] text-brand">
                             <FileSearch className="h-4 w-4" strokeWidth={1.75} />

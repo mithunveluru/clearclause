@@ -41,7 +41,7 @@ export function AnalysisProgress({ status }: { status: string }) {
   if (status === "failed") {
     return (
       <p className="text-[0.9375rem] font-medium text-risk-high">
-        We couldn't finish analyzing this document. Please try uploading it again.
+        We couldn&apos;t finish analyzing this document. Please try uploading it again.
       </p>
     );
   }

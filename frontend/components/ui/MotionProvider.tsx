@@ -1,7 +1,12 @@
 "use client";
-import { domAnimation, LazyMotion } from "framer-motion";
+import { domAnimation, LazyMotion, MotionConfig } from "framer-motion";
 import type { ReactNode } from "react";
 
 export function MotionProvider({ children }: { children: ReactNode }) {
-  return <LazyMotion features={domAnimation}>{children}</LazyMotion>;
+  // reducedMotion="user" makes every framer `m.*` animation honor the OS setting.
+  return (
+    <LazyMotion features={domAnimation}>
+      <MotionConfig reducedMotion="user">{children}</MotionConfig>
+    </LazyMotion>
+  );
 }

@@ -116,7 +116,7 @@ export function OverviewView({
         <div>
           <p className="mb-3 flex items-center gap-1.5 t-caption">
             <CheckCircle className="h-3.5 w-3.5 text-[#16a34a]" />
-            What's in your favour
+            What&apos;s in your favour
           </p>
           <ul className="space-y-2">
             {explorer.strengths.map((s, i) => (

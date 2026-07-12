@@ -20,7 +20,7 @@ export function FindingsTimeline({
     <ol className="relative">
       <span className="absolute left-[7px] top-2 bottom-2 w-px bg-line" aria-hidden />
       {findings.map((f, i) => {
-        const m = severityMeta(f.severity);
+        const meta = severityMeta(f.severity);
         return (
           <m.li
             key={f.id}
@@ -31,7 +31,7 @@ export function FindingsTimeline({
           >
             <span
               className="absolute left-0 top-1.5 h-3.5 w-3.5 rounded-full ring-4 ring-surface"
-              style={{ backgroundColor: m.color }}
+              style={{ backgroundColor: meta.color }}
               aria-hidden
             />
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
@@ -40,9 +40,9 @@ export function FindingsTimeline({
               </h3>
               <span
                 className="text-[0.6875rem] font-semibold uppercase tracking-[0.08em]"
-                style={{ color: m.color }}
+                style={{ color: meta.color }}
               >
-                {m.label} severity
+                {meta.label} severity
               </span>
               <span className="t-caption">· {Math.round(f.confidence * 100)}% confidence</span>
             </div>
