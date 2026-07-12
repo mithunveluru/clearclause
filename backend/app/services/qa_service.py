@@ -12,6 +12,42 @@ from app.metrics import record_ai
 from app.rag import HybridRetriever, StructuredRetriever, detect_intent
 
 
+_SENTENCE = re.compile(r"(?<=[.;])\s+")
+_STOPWORDS = frozenset(
+    "a an the is are was were be been do does did what which who whom how when "
+    "where why can could shall should will would may might my your this that of "
+    "in on for to and or if it its i me".split()
+)
+_SNIPPET_CHARS = 220
+
+
+def _terms(text: str) -> set[str]:
+    return {w for w in re.findall(r"[a-z0-9]+", text.lower()) if w not in _STOPWORDS}
+
+
+def best_snippet(chunk_text: str, question: str, answer: str = "") -> str:
+    """Return the sentence in this chunk that actually supports the answer.
+
+    A chunk holds a whole section, so `chunk_text[:160]` returned its opening words
+    regardless of what was asked — a question about the prepayment penalty was
+    "evidenced" by the processing-fee clause sitting at the top of the chunk. The
+    citation is the product's proof of work; showing text that does not support the
+    claim is worse than showing none.
+
+    Scored against the question *and* the answer: the answer carries the specific
+    terms ("4 percent", "foreclosed") that the question does not.
+    """
+    sentences = [s.strip() for s in _SENTENCE.split(chunk_text) if s.strip()]
+    if not sentences:
+        return chunk_text[:_SNIPPET_CHARS]
+
+    wanted = _terms(question) | _terms(answer)
+    best = max(sentences, key=lambda s: len(_terms(s) & wanted))
+    if not _terms(best) & wanted:
+        return chunk_text[:_SNIPPET_CHARS]  # nothing matched; the opening is as good as any
+    return best[:_SNIPPET_CHARS]
+
+
 class QAService:
     """Hybrid Q&A: three retrieval layers fused per intent, answers grounded in evidence.
 
@@ -88,7 +124,11 @@ class QAService:
         follow_ups = await self._follow_ups(question, answer_text, doc_type)
 
         citations = [
-            Citation(page=c.page_number, section=c.section_name, snippet=c.text[:160])
+            Citation(
+                page=c.page_number,
+                section=c.section_name,
+                snippet=best_snippet(c.text, question, answer_text),
+            )
             for c in chunks[:3]
         ]
 
