@@ -2,8 +2,11 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package.json package-lock.json* ./
-RUN npm install
+COPY package.json package-lock.json ./
+# npm ci installs exactly what the lockfile pins and fails if package.json has
+# drifted from it. `npm install` re-resolved versions on every build, so no two
+# builds were guaranteed to contain the same dependency tree.
+RUN npm ci
 
 COPY . .
 
