@@ -57,7 +57,9 @@ export function ExplorerNav({
           </p>
           {explorer.risk_score != null && (
             <p className="mt-0.5 text-[1.5rem] font-bold tracking-tight leading-none" style={{ color: bm.color }}>
-              {explorer.risk_score}<span className="text-[0.875rem] font-normal ml-1 opacity-70">/100</span>
+              {explorer.risk_score}
+              {/* No opacity: it washed the risk colour out below the contrast floor. */}
+              <span className="ml-1 text-[0.875rem] font-normal text-ink-2">/100</span>
             </p>
           )}
         </div>

@@ -271,8 +271,8 @@ function ContentPane({
         <h2 className="mb-4 text-[1.375rem] font-bold tracking-tight">What&apos;s in Your Favour</h2>
         <ul className="space-y-3">
           {explorer.strengths.map((s, i) => (
-            <li key={i} className="flex items-start gap-3 rounded-xl border border-[#16a34a]/20 bg-[#f0fdf4] px-4 py-3 text-[0.9375rem] leading-relaxed">
-              <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#16a34a]" strokeWidth={2} />
+            <li key={i} className="flex items-start gap-3 rounded-xl border border-[#15803d]/20 bg-[#f0fdf4] px-4 py-3 text-[0.9375rem] leading-relaxed">
+              <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#15803d]" strokeWidth={2} />
               {s}
             </li>
           ))}

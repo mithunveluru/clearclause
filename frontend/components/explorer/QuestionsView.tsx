@@ -7,10 +7,10 @@ import { askQuestion, type Citation, type SuggestedQuestion } from "@/lib/api";
 type Msg = { role: "user" | "assistant"; content: string; citations?: Citation[] };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  cost: "#d97706",
-  penalty: "#dc2626",
+  cost: "#b45309",
+  penalty: "#b91c1c",
   cancellation: "#7c3aed",
-  rights: "#16a34a",
+  rights: "#15803d",
 };
 
 function citationLabel(c: Citation) {

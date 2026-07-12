@@ -37,7 +37,8 @@ export function OverviewView({
             {explorer.risk_score != null && (
               <p className="mt-0.5 text-[2.25rem] font-bold leading-none tracking-tighter" style={{ color: bm.color }}>
                 {explorer.risk_score}
-                <span className="ml-1 text-[1rem] font-normal opacity-60">/100</span>
+                {/* No opacity: it washed the risk colour out to 2.4:1 against its own tint. */}
+                <span className="ml-1 text-[1rem] font-normal text-ink-2">/100</span>
               </p>
             )}
             {explorer.analysis_summary && (
@@ -75,7 +76,7 @@ export function OverviewView({
       {highestSections.length > 0 && (
         <div>
           <p className="mb-3 flex items-center gap-1.5 t-caption">
-            <AlertTriangle className="h-3.5 w-3.5 text-[#dc2626]" />
+            <AlertTriangle className="h-3.5 w-3.5 text-[#b91c1c]" />
             Attention required
           </p>
           <div className="space-y-2">
@@ -115,13 +116,13 @@ export function OverviewView({
       {explorer.strengths.length > 0 && (
         <div>
           <p className="mb-3 flex items-center gap-1.5 t-caption">
-            <CheckCircle className="h-3.5 w-3.5 text-[#16a34a]" />
+            <CheckCircle className="h-3.5 w-3.5 text-[#15803d]" />
             What&apos;s in your favour
           </p>
           <ul className="space-y-2">
             {explorer.strengths.map((s, i) => (
               <li key={i} className="flex items-start gap-2.5 text-[0.9375rem] leading-relaxed">
-                <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#16a34a]" strokeWidth={2} />
+                <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#15803d]" strokeWidth={2} />
                 {s}
               </li>
             ))}

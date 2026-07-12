@@ -7,10 +7,13 @@ export default {
       colors: {
         canvas: "#fafbff",
         surface: "#ffffff",
+        // Every step clears WCAG AA (4.5:1) on canvas/surface. The old ink-3
+        // (#94a3b8) measured 2.56:1 — decorative-looking, but it carried real text
+        // like the "/100" on the risk score.
         ink: {
-          DEFAULT: "#0f172a",
-          2: "#64748b",
-          3: "#94a3b8",
+          DEFAULT: "#0f172a", // 16.8:1
+          2: "#475569",       //  7.5:1
+          3: "#5b6b80",       //  5.4:1 — 4.8:1 cleared white but missed on tinted surfaces
         },
         line: {
           DEFAULT: "#e8ecf5",
@@ -23,10 +26,13 @@ export default {
           soft: "#eef2ff",
         },
         accent: "#4f46e5",
+        // Darkened to clear 4.5:1 as text, both on white and on their own tints.
+        // #d97706 measured 3.18:1 and #dc2626 only 4.41:1 on its own red tint —
+        // the severity label is the most important word on the page to be able to read.
         risk: {
-          low: "#16a34a",
-          moderate: "#d97706",
-          high: "#dc2626",
+          low: "#15803d",
+          moderate: "#b45309",
+          high: "#b91c1c",
           critical: "#991b1b",
         },
       },
