@@ -1,6 +1,8 @@
 import pytest
+from reportlab.pdfgen import canvas
 
-from app.core.files import detect_source_type, validate_extension
+from app.core.config import settings
+from app.core.files import detect_source_type, validate_extension, validate_pdf_pages
 
 
 def test_extension_allowlist():
@@ -21,3 +23,30 @@ def test_detect_source_type_rejects_disguised_content():
     # .pdf extension but plain-text content must not pass the content sniff.
     with pytest.raises(ValueError):
         detect_source_type(b"this is not really a pdf")
+
+
+def _pdf_of(pages: int, path: str) -> str:
+    c = canvas.Canvas(path)
+    for i in range(pages):
+        c.drawString(72, 720, f"page {i + 1}")
+        c.showPage()
+    c.save()
+    return path
+
+
+def test_pdf_page_cap(tmp_path):
+    # A tiny PDF can still hold enough pages to OOM the OCR worker; the byte-size
+    # cap does not bound page count, so this one does.
+    ok = _pdf_of(settings.MAX_PDF_PAGES, str(tmp_path / "ok.pdf"))
+    assert validate_pdf_pages(ok) == settings.MAX_PDF_PAGES
+
+    bomb = _pdf_of(settings.MAX_PDF_PAGES + 1, str(tmp_path / "bomb.pdf"))
+    with pytest.raises(ValueError, match="limit"):
+        validate_pdf_pages(bomb)
+
+
+def test_corrupt_pdf_rejected_at_boundary(tmp_path):
+    bad = tmp_path / "corrupt.pdf"
+    bad.write_bytes(b"%PDF-1.7\nnot actually a pdf")
+    with pytest.raises(ValueError):
+        validate_pdf_pages(str(bad))

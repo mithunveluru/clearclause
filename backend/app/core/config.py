@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     OCR_PROVIDER: str = "tesseract"
     OTEL_EXPORTER_OTLP_ENDPOINT: str = ""
     MAX_UPLOAD_MB: int = 10
+    MAX_PDF_PAGES: int = 50   # a 10MB PDF can hold thousands of pages; OCR memory scales with them
     FILE_RETENTION_DAYS: int = 7
     CORS_ORIGINS: str = "http://localhost:3000"  # comma-separated
     PIPELINE: str = "staged"

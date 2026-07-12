@@ -7,7 +7,7 @@ from app.core.ratelimit import rate_limit
 from app.core.security import decode_token
 from app.db.session import get_db
 from app.repositories.user_repo import UserRepository
-from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserOut
+from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
 from app.services.auth_service import AuthService
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -32,12 +32,13 @@ def _service(db: AsyncSession = Depends(get_db)) -> AuthService:
 
 @router.post(
     "/register",
-    response_model=UserOut,
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(rate_limit(limit=5, window=60, scope="register"))],
 )
 async def register(body: RegisterRequest, svc: AuthService = Depends(_service)):
-    return await svc.register(body.email, body.password)
+    # Generic response — does not reveal whether the email was already registered.
+    await svc.register(body.email, body.password)
+    return {"ok": True}
 
 
 @router.post(
