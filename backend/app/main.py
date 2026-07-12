@@ -10,7 +10,7 @@ from app.api.health import router as health_router
 from app.api.v1.analysis import router as analysis_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.documents import router as documents_router
-from app.core.config import settings
+from app.core.config import DEFAULT_JWT_SECRET, settings
 from app.core.logredact import install_redaction
 from app.db.session import engine
 from app.models.user import User
@@ -31,12 +31,8 @@ install_redaction()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Refuse to start in production with the default JWT secret.
-    if settings.JWT_SECRET == "change-me-in-prod":
-        if settings.ENV == "production":
-            raise RuntimeError(
-                "JWT_SECRET must be changed from the default value before running in production"
-            )
+    # Production is enforced in Settings (covers the worker too); warn in dev.
+    if settings.JWT_SECRET == DEFAULT_JWT_SECRET:
         logger.warning(
             "⚠  JWT_SECRET is using the insecure default — set a strong random value before deploying"
         )
