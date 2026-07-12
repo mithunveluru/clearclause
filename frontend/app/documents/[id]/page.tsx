@@ -1,6 +1,6 @@
 "use client";
 import { AnimatePresence, m } from "framer-motion";
-import { AlertTriangle, ArrowLeft, CheckCircle, Lock } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle, Compass, Lock } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -140,10 +140,10 @@ export default function DocumentDetail() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="flex min-h-[calc(100vh-56px)]"
+          className="flex min-h-[calc(100vh-64px)]"
         >
           <aside className="hidden w-64 shrink-0 border-r border-line bg-surface lg:block xl:w-72">
-            <div className="sticky top-14 max-h-[calc(100vh-56px)] overflow-y-auto px-4">
+            <div className="sticky top-16 max-h-[calc(100vh-64px)] overflow-y-auto px-4">
               <ExplorerNav
                 explorer={explorer}
                 active={active}
@@ -156,7 +156,7 @@ export default function DocumentDetail() {
           </aside>
 
           <main className="flex-1 min-w-0">
-            <div className="sticky top-14 z-20 border-b border-line bg-surface/95 backdrop-blur-md">
+            <div className="sticky top-16 z-20 border-b border-line bg-surface/95 backdrop-blur-md">
               <div className="px-6 py-3.5 flex items-center justify-between gap-4">
                 <div className="min-w-0">
                   <p className="truncate font-semibold text-[0.9375rem] leading-snug">
@@ -171,7 +171,14 @@ export default function DocumentDetail() {
                 </div>
               </div>
 
-              <MobileNav explorer={explorer} active={active} onSelect={setActive} />
+              <MobileNav
+                explorer={explorer}
+                active={active}
+                onSelect={setActive}
+                mode={mode}
+                onMode={setMode}
+                onWalkthrough={() => setWalkthrough(true)}
+              />
             </div>
 
             <div className="mx-auto max-w-3xl px-6 py-10">
@@ -268,7 +275,7 @@ function ContentPane({
   if (active === "strengths") {
     return (
       <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-        <h2 className="mb-4 text-[1.375rem] font-bold tracking-tight">What&apos;s in Your Favour</h2>
+        <h2 className="mb-4 text-[1.375rem] font-semibold tracking-tight">In your favour</h2>
         <ul className="space-y-3">
           {explorer.strengths.map((s, i) => (
             <li key={i} className="flex items-start gap-3 rounded-xl border border-[#15803d]/20 bg-[#f0fdf4] px-4 py-3 text-[0.9375rem] leading-relaxed">
@@ -287,14 +294,22 @@ function ContentPane({
   return <OverviewView explorer={explorer} onSection={onSection} />;
 }
 
+const READING_MODES: ReadingMode[] = ["consumer", "professional", "negotiation", "financial"];
+
 function MobileNav({
   explorer,
   active,
   onSelect,
+  mode,
+  onMode,
+  onWalkthrough,
 }: {
   explorer: ExplorerDoc;
   active: string;
   onSelect: (id: string) => void;
+  mode: ReadingMode;
+  onMode: (m: ReadingMode) => void;
+  onWalkthrough: () => void;
 }) {
   const items = [
     { id: "overview",  label: "Overview" },
@@ -306,23 +321,46 @@ function MobileNav({
   ];
 
   return (
-    <nav
-      aria-label="Document sections"
-      className="lg:hidden flex gap-1.5 overflow-x-auto px-4 pb-2.5 scrollbar-none"
-    >
-      {items.map(({ id, label }) => (
+    <div className="lg:hidden flex items-center gap-2 px-4 pb-2.5">
+      <nav
+        aria-label="Document sections"
+        className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto scrollbar-none"
+      >
+        {items.map(({ id, label }) => (
+          <button
+            key={id}
+            onClick={() => onSelect(id)}
+            className={`shrink-0 rounded-lg px-3 py-1.5 text-[0.8125rem] font-medium transition whitespace-nowrap ${
+              active === id
+                ? "bg-brand text-white"
+                : "bg-canvas text-ink-2 hover:text-ink"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+      <select
+        aria-label="Reading mode"
+        value={mode}
+        onChange={(e) => onMode(e.target.value as ReadingMode)}
+        className="h-8 shrink-0 rounded-lg border border-line bg-surface px-1.5 text-[0.8125rem] font-medium text-ink-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+      >
+        {READING_MODES.map((id) => (
+          <option key={id} value={id}>
+            {id.charAt(0).toUpperCase() + id.slice(1)}
+          </option>
+        ))}
+      </select>
+      {explorer.walkthrough.length > 0 && (
         <button
-          key={id}
-          onClick={() => onSelect(id)}
-          className={`shrink-0 rounded-lg px-3 py-1.5 text-[0.8125rem] font-medium transition whitespace-nowrap ${
-            active === id
-              ? "bg-brand text-white"
-              : "bg-canvas text-ink-2 hover:text-ink"
-          }`}
+          onClick={onWalkthrough}
+          aria-label="Guided walkthrough"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand/20 bg-brand/5 text-brand transition hover:bg-brand/10"
         >
-          {label}
+          <Compass className="h-4 w-4" strokeWidth={1.75} />
         </button>
-      ))}
-    </nav>
+      )}
+    </div>
   );
 }

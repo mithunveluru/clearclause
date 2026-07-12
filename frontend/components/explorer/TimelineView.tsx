@@ -42,7 +42,7 @@ export function TimelineView({ events }: { events: TimelineEvent[] }) {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <h2 className="mb-1 text-[1.375rem] font-bold tracking-tight">Timeline</h2>
+      <h2 className="mb-1 text-[1.375rem] font-semibold tracking-tight">Timeline</h2>
       <p className="mb-8 t-body text-ink-2">Key dates, periods, and financial events extracted from the document.</p>
 
       <ol className="relative space-y-0">

@@ -33,7 +33,7 @@ export function FinancialView({ impact }: { impact: FinancialImpact }) {
 
   return (
     <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-      <h2 className="mb-1 text-[1.375rem] font-bold tracking-tight">Financial Impact</h2>
+      <h2 className="mb-1 text-[1.375rem] font-semibold tracking-tight">Financial Impact</h2>
       <p className="mb-6 t-body text-ink-2">
         All monetary terms extracted from the document, grouped by type.
       </p>

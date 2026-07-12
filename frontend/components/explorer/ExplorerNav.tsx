@@ -1,7 +1,7 @@
 "use client";
 import {
-  AlertTriangle, BookOpen, Calendar, DollarSign, Eye,
-  HelpCircle, Map, MessageSquare, RotateCcw, Shield, Sparkles,
+  AlertTriangle, BookOpen, Calendar, CheckCircle, Compass, DollarSign, Eye,
+  HelpCircle, Map, MessageSquare, RotateCcw, Shield,
 } from "lucide-react";
 import { bandMeta, severityMeta } from "@/lib/ui";
 import type { ExplorerDoc, ExplorerSection } from "@/lib/api";
@@ -16,8 +16,7 @@ const NAV_ITEMS = [
   { id: "financial",    label: "Financial Impact", Icon: DollarSign },
   { id: "timeline",     label: "Timeline",         Icon: Calendar },
   { id: "questions",    label: "Questions",        Icon: HelpCircle },
-  { id: "qa",           label: "Ask Anything",     Icon: MessageSquare },
-  { id: "strengths",    label: "What's Good",      Icon: Sparkles },
+  { id: "strengths",    label: "In Your Favour",   Icon: CheckCircle },
 ];
 
 const MODE_OPTIONS: { id: ReadingMode; label: string; Icon: React.ElementType }[] = [
@@ -70,7 +69,7 @@ export function ExplorerNav({
           onClick={onWalkthrough}
           className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border border-brand/20 bg-brand/5 px-4 py-2.5 text-[0.875rem] font-semibold text-brand transition hover:bg-brand/10"
         >
-          <Sparkles className="h-4 w-4" strokeWidth={1.75} />
+          <Compass className="h-4 w-4" strokeWidth={1.75} />
           Guided Walkthrough
         </button>
       )}

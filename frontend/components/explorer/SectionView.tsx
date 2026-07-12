@@ -18,7 +18,7 @@ export function SectionView({
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
     >
       <div className="mb-6">
-        <h2 className="text-[1.375rem] font-bold tracking-tight">{section.label}</h2>
+        <h2 className="text-[1.375rem] font-semibold tracking-tight">{section.label}</h2>
         <p className="mt-1 t-body text-ink-2">{section.summary}</p>
         <p className="mt-1 t-caption">
           {section.item_count} {section.item_count === 1 ? "issue" : "issues"} detected
