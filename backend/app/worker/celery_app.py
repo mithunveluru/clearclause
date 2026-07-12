@@ -11,6 +11,11 @@ celery_app = Celery(
 )
 celery_app.conf.task_track_started = True
 
+# No task may run forever: a pathological document must not hold the shared queue.
+# Soft limit raises inside the task (stage marks the doc failed); hard limit kills it.
+celery_app.conf.task_soft_time_limit = 540  # 9 min
+celery_app.conf.task_time_limit = 600       # 10 min, SIGKILL backstop
+
 # Staged pipeline routing (PIPELINE=staged). Worker consumes all of these queues.
 celery_app.conf.task_routes = {
     "stage.ocr": {"queue": "ocr_queue"},

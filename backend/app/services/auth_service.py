@@ -6,7 +6,6 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
-from app.models.user import User
 from app.repositories.user_repo import UserRepository
 from app.schemas.auth import TokenResponse
 
@@ -15,12 +14,12 @@ class AuthService:
     def __init__(self, users: UserRepository):
         self.users = users
 
-    async def register(self, email: str, password: str) -> User:
+    async def register(self, email: str, password: str) -> None:
+        # Anti-enumeration: never reveal whether the email is already taken.
+        # If it exists, silently no-op so the response is identical either way.
         if await self.users.get_by_email(email):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT, detail="Email already registered"
-            )
-        return await self.users.create(email, hash_password(password))
+            return
+        await self.users.create(email, hash_password(password))
 
     async def login(self, email: str, password: str) -> TokenResponse:
         user = await self.users.get_by_email(email)

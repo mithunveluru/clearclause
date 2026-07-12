@@ -17,6 +17,13 @@ class DocumentService:
         except ValueError as e:
             raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=str(e))
         path = files.save_upload(content, ext)
+        if source_type == "pdf":
+            # Needs the file on disk to count pages; clean up if it's over the cap.
+            try:
+                files.validate_pdf_pages(path)
+            except ValueError as e:
+                files.delete_file(path)
+                raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=str(e))
         return await self.repo.create(user_id, filename, path, source_type)
 
     async def list_documents(self, user_id: int) -> list[Document]:

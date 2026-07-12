@@ -1,6 +1,8 @@
 import os
 import uuid
 
+from pdf2image import pdfinfo_from_path
+
 from app.core.config import settings
 
 ALLOWED_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg"}
@@ -25,6 +27,23 @@ def detect_source_type(content: bytes) -> str:
         if content.startswith(sig):
             return kind
     raise ValueError("File content does not match an allowed PDF/PNG/JPEG type")
+
+
+def validate_pdf_pages(path: str) -> int:
+    """Reject PDFs with more pages than we will OCR.
+
+    The byte-size cap does not bound page count — a small compressed PDF can hold
+    thousands of pages, and OCR rasterizes each one. Without this the worker OOMs.
+    """
+    try:
+        pages = pdfinfo_from_path(path)["Pages"]
+    except Exception as e:  # unparseable/corrupt PDF — reject at the boundary, not in the worker
+        raise ValueError("Could not read this PDF; it may be corrupt or password-protected") from e
+    if pages > settings.MAX_PDF_PAGES:
+        raise ValueError(
+            f"PDF has {pages} pages; the limit is {settings.MAX_PDF_PAGES}"
+        )
+    return pages
 
 
 def save_upload(content: bytes, ext: str) -> str:
