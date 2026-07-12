@@ -1,11 +1,15 @@
+import logging
 import time
 
 from fastapi import HTTPException, Request, status
-from redis.asyncio import Redis
+from redis.exceptions import RedisError
 
 from app.core.config import settings
+from app.core.redis import redis_client
 
-redis_client = Redis.from_url(settings.REDIS_URL, decode_responses=True)
+logger = logging.getLogger(__name__)
+
+__all__ = ["rate_limit", "redis_client"]
 
 
 def _real_ip(request: Request) -> str:
@@ -30,9 +34,16 @@ def rate_limit(limit: int, window: int, scope: str):
     async def dependency(request: Request) -> None:
         ip = _real_ip(request)
         key = f"rl:{scope}:{ip}:{int(time.time()) // window}"
-        count = await redis_client.incr(key)
-        if count == 1:
-            await redis_client.expire(key, window)
+        try:
+            count = await redis_client.incr(key)
+            if count == 1:
+                await redis_client.expire(key, window)
+        except RedisError:
+            # Fail open: a Redis outage must not take down login/upload/Q&A with it.
+            # The tradeoff is that brute-force protection is absent while Redis is
+            # down, so this logs at error level — it should page, not pass quietly.
+            logger.error("rate limiter unavailable (scope=%s); allowing request", scope)
+            return
         if count > limit:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,

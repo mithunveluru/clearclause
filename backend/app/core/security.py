@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
@@ -21,7 +22,13 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 def _make_token(subject: str, token_type: str, ttl: timedelta) -> str:
     now = datetime.now(timezone.utc)
-    payload = {"sub": subject, "type": token_type, "iat": now, "exp": now + ttl}
+    payload = {
+        "sub": subject,
+        "type": token_type,
+        "iat": now,
+        "exp": now + ttl,
+        "jti": uuid.uuid4().hex,  # names this token so it can be revoked individually
+    }
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=ALGORITHM)
 
 
@@ -33,9 +40,9 @@ def create_refresh_token(user_id: int) -> str:
     return _make_token(str(user_id), "refresh", REFRESH_TTL)
 
 
-def decode_token(token: str, expected_type: str) -> int:
-    """Return the user id, or raise jwt exceptions on invalid/expired/wrong-type."""
+def decode_token(token: str, expected_type: str) -> dict:
+    """Return the token payload, or raise jwt exceptions on invalid/expired/wrong-type."""
     payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[ALGORITHM])
     if payload.get("type") != expected_type:
         raise jwt.InvalidTokenError("wrong token type")
-    return int(payload["sub"])
+    return payload

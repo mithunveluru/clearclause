@@ -1,6 +1,9 @@
 from functools import lru_cache
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DEFAULT_JWT_SECRET = "change-me-in-prod"
 
 
 class Settings(BaseSettings):
@@ -10,7 +13,7 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = "postgresql+asyncpg://clearclause:clearclause@db:5432/clearclause"
     REDIS_URL: str = "redis://redis:6379/0"
-    JWT_SECRET: str = "change-me-in-prod"
+    JWT_SECRET: str = DEFAULT_JWT_SECRET
     UPLOAD_DIR: str = "/storage/uploads"
     REPORT_DIR: str = "/storage/reports"
     OCR_PROVIDER: str = "tesseract"
@@ -19,7 +22,6 @@ class Settings(BaseSettings):
     MAX_PDF_PAGES: int = 50   # a 10MB PDF can hold thousands of pages; OCR memory scales with them
     FILE_RETENTION_DAYS: int = 7
     CORS_ORIGINS: str = "http://localhost:3000"  # comma-separated
-    PIPELINE: str = "staged"
 
     ENV: str = "development"          # set to "production" in prod deployments
     COOKIE_SECURE: bool = False       # set True when serving over HTTPS
@@ -36,6 +38,26 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str = ""
     JINA_API_KEY: str = ""
     QDRANT_URL: str = "http://qdrant:6333"
+
+    @model_validator(mode="after")
+    def _enforce_production_invariants(self) -> "Settings":
+        """Refuse to start a misconfigured production deployment.
+
+        Lives here, not in the API's lifespan, so it also covers the worker and
+        alembic — neither of which runs the app's startup hooks.
+        """
+        if self.ENV != "production":
+            return self
+        problems = []
+        if self.JWT_SECRET == DEFAULT_JWT_SECRET:
+            problems.append("JWT_SECRET is still the default value")
+        if not self.COOKIE_SECURE:
+            problems.append("COOKIE_SECURE must be true (auth cookies need the Secure flag)")
+        if any(o.startswith("http://") for o in self.cors_origins_list):
+            problems.append("CORS_ORIGINS contains a plaintext http:// origin")
+        if problems:
+            raise ValueError("Refusing to start in production: " + "; ".join(problems))
+        return self
 
     @property
     def cors_origins_list(self) -> list[str]:

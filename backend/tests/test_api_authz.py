@@ -16,17 +16,11 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
 from app.core.ratelimit import redis_client
-from app.db.session import SessionLocal, engine
+from app.db.session import SessionLocal
 from app.main import app
 from app.repositories.document_repo import DocumentRepository
 
 DENIED = "Document not found"
-
-# `engine` and `redis_client` are module-level singletons bound to the loop that
-# first used them. Under the default per-test loop they break on the second test
-# and _reachable() would report a false "not reachable" skip. One loop per module.
-pytestmark = pytest.mark.asyncio(loop_scope="module")
-
 
 async def _reachable() -> bool:
     try:
@@ -72,16 +66,7 @@ ROUTES = [
 ]
 
 
-@pytest_asyncio.fixture(scope="module", autouse=True, loop_scope="module")
-async def _release_shared_engine():
-    # This module pins its own loop, which binds the global engine's connections to
-    # it. Dispose on the way out, or the next module's loop inherits dead sockets
-    # and its own reachability check silently skips it.
-    yield
-    await engine.dispose()
-
-
-@pytest_asyncio.fixture(autouse=True, loop_scope="module")
+@pytest_asyncio.fixture(autouse=True)
 async def _clear_rate_limits():
     # The limiter is keyed by client IP; every test here shares one. Without this,
     # repeated runs exhaust the register/login windows and the suite goes flaky.

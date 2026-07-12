@@ -18,7 +18,7 @@ async def get_current_user(
             detail="Not authenticated",
         )
     try:
-        user_id = decode_token(cc_token, expected_type="access")
+        user_id = int(decode_token(cc_token, expected_type="access")["sub"])
     except jwt.PyJWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
