@@ -2,7 +2,7 @@ import asyncio
 
 from app.ai.prompts import QA_SYSTEM
 from app.contracts import Chunk
-from app.services.qa_service import QAService
+from app.services.qa_service import QAService, best_snippet
 
 
 class FakeClient:
@@ -57,3 +57,37 @@ def test_qa_grounds_answer_and_cites_sources():
     assert client.seen["system"] == QA_SYSTEM
     assert "two months rent" in client.seen["prompt"]
     assert "Rs 25000" in client.seen["prompt"]
+
+
+def test_citation_snippet_supports_the_claim():
+    # A chunk holds a whole section. Returning its opening characters "evidenced" a
+    # prepayment-penalty answer with the processing-fee clause — the citation is the
+    # product's proof of work, so it has to point at the sentence that backs it up.
+    chunk = (
+        "A processing fee of 2.5 percent of the sanctioned amount is payable upon disbursal. "
+        "The borrower shall pay a prepayment penalty of 4 percent on any amount foreclosed "
+        "within the first 12 months. "
+        "A late payment charge of 3 percent per month applies on overdue EMIs."
+    )
+    snippet = best_snippet(
+        chunk,
+        "What is the prepayment penalty?",
+        "The prepayment penalty is 4 percent on amounts foreclosed within 12 months.",
+    )
+
+    assert "prepayment penalty of 4 percent" in snippet
+    assert "processing fee" not in snippet
+
+
+def test_citation_snippet_tracks_the_question_asked():
+    chunk = (
+        "A processing fee of 2.5 percent is payable upon disbursal. "
+        "A late payment charge of 3 percent per month applies on overdue EMIs."
+    )
+    assert "late payment charge" in best_snippet(chunk, "What happens if I pay late?", "")
+    assert "processing fee" in best_snippet(chunk, "What is the processing fee?", "")
+
+
+def test_citation_snippet_falls_back_when_nothing_matches():
+    chunk = "The agreement is governed by the laws of India."
+    assert best_snippet(chunk, "zzz qqq", "") == chunk

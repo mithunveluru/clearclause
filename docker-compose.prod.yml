@@ -101,6 +101,23 @@ services:
         condition: service_healthy
     command: celery -A app.worker.celery_app beat --loglevel=info
 
+  # Vector store for Q&A retrieval. Only needed when AI_MODE=full; with AI_MODE=off
+  # or summary_only nothing connects to it and the profile can stay down.
+  qdrant:
+    image: qdrant/qdrant:v1.12.4
+    profiles: ["ai"]
+    restart: unless-stopped
+    volumes:
+      - qdrant-data:/qdrant/storage
+    healthcheck:
+      # No curl/wget in the image; Qdrant ships its own healthcheck binary.
+      test: ["CMD", "/qdrant/qdrant", "--version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    # No host port: reachable only on the compose network. Qdrant has no auth by
+    # default, so it must never be exposed.
+
   frontend:
     build:
       context: ./frontend
@@ -131,5 +148,6 @@ services:
 volumes:
   pgdata:
   redisdata:
+  qdrant-data:
   caddy-data:
   caddy-config:
