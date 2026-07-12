@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
 from app.core.ratelimit import rate_limit
+from app.core.storage import get_storage
 from app.contracts import QAAnswer
 from app.schemas.qa import QARequest
 from app.services.qa_service import QAService
@@ -271,16 +272,25 @@ async def get_report(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Serve the generated HTML report (opens in browser / downloadable)."""
+    """Serve the generated PDF report (opens in browser / downloadable)."""
     await DocumentService(DocumentRepository(db)).get(doc_id, user.id)
     report = await ReportRepository(db).get(doc_id)
     if report is None or not report.pdf_path:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Report not generated yet"
         )
-    return FileResponse(
-        report.pdf_path,
-        media_type="application/pdf",
-        filename=f"ClearClause-Report-{doc_id}.pdf",
-        content_disposition_type="inline",
-    )
+
+    store = get_storage()
+    # Ownership is checked above; the signed URL is short-lived and unguessable, so
+    # object storage can serve the bytes directly instead of streaming them through us.
+    url = store.signed_url(report.pdf_path)
+    if url:
+        return RedirectResponse(url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+
+    with store.local_path(report.pdf_path) as path:
+        return FileResponse(
+            path,
+            media_type="application/pdf",
+            filename=f"ClearClause-Report-{doc_id}.pdf",
+            content_disposition_type="inline",
+        )

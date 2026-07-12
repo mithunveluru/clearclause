@@ -14,8 +14,14 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://clearclause:clearclause@db:5432/clearclause"
     REDIS_URL: str = "redis://redis:6379/0"
     JWT_SECRET: str = DEFAULT_JWT_SECRET
-    UPLOAD_DIR: str = "/storage/uploads"
-    REPORT_DIR: str = "/storage/reports"
+    # Object storage. local = a directory (dev/tests); s3 = S3/R2/Spaces, encrypted
+    # at rest, reports served by signed URL. Anything holding real user documents
+    # should be on s3 — a container-local volume is unencrypted and unbacked.
+    STORAGE_BACKEND: str = "local"   # local | s3
+    STORAGE_DIR: str = "/storage"    # local backend root
+    S3_BUCKET: str = ""
+    S3_ENDPOINT_URL: str = ""        # set for R2 / Spaces / MinIO; blank for AWS
+    S3_REGION: str = ""
     OCR_PROVIDER: str = "auto"  # auto = PDF text layer first, OCR only scanned pages
     OCR_LOW_CONFIDENCE: int = 60  # below this mean OCR confidence, warn the user (0-100)
     OTEL_EXPORTER_OTLP_ENDPOINT: str = ""

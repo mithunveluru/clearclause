@@ -1,0 +1,135 @@
+# Production stack. Differs from the dev compose in every way that matters:
+# built images instead of bind mounts (the dev compose mounts ./backend over /app,
+# so the image contents are never actually exercised), no --reload, no host ports on
+# the datastores, TLS at the edge, and restart policies.
+#
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d
+#
+# Uploads live in object storage (STORAGE_BACKEND=s3), not on a volume — so the API
+# and worker share no filesystem and the worker can be scaled out.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # No host port: reachable only on the compose network.
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "60", "1", "--appendonly", "no"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    build: ./backend
+    env_file: .env.production
+    command: alembic upgrade head
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"  # runs once per deploy, then exits
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env.production
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    command: >-
+      uvicorn app.main:app --host 0.0.0.0 --port 8000
+      --workers 4 --proxy-headers --forwarded-allow-ips='*'
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    # No host port: only Caddy reaches it.
+
+  worker:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env.production
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    # OCR is CPU-bound; concurrency above core count only adds contention.
+    command: >-
+      celery -A app.worker.celery_app worker
+      -Q ocr_queue,analysis_queue,report_queue,ai_queue,celery
+      --concurrency=${WORKER_CONCURRENCY:-2} --max-tasks-per-child=50 --loglevel=info
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.worker.celery_app inspect ping -d celery@$$HOSTNAME"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Separate beat: embedded --beat would fire the cleanup job once per worker replica.
+  beat:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env.production
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: celery -A app.worker.celery_app beat --loglevel=info
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:?set NEXT_PUBLIC_API_BASE_URL}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+    # `npm run start` from the image — no bind mount, no dev server.
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - frontend
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN}
+      API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data     # ACME certificates — losing this re-issues on restart
+      - caddy-config:/config
+    ports:
+      - "80:80"
+      - "443:443"
+
+volumes:
+  pgdata:
+  redisdata:
+  caddy-data:
+  caddy-config:

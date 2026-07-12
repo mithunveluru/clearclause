@@ -1,8 +1,8 @@
-from app.core.config import settings
+from app.core.storage import LocalStorage
 from app.worker import tasks
 
 
-def test_sweep_removes_only_unreferenced_files(tmp_path, monkeypatch):
+def test_sweep_removes_only_unreferenced_files(tmp_path):
     up = tmp_path / "uploads"
     rep = tmp_path / "reports"
     up.mkdir()
@@ -14,10 +14,8 @@ def test_sweep_removes_only_unreferenced_files(tmp_path, monkeypatch):
     gitkeep = up / ".gitkeep"
     gitkeep.write_text("")
 
-    monkeypatch.setattr(settings, "UPLOAD_DIR", str(up))
-    monkeypatch.setattr(settings, "REPORT_DIR", str(rep))
-
-    removed = tasks._sweep_orphans({str(keep)})
+    store = LocalStorage(root=str(tmp_path))
+    removed = tasks._sweep_local_orphans({"uploads/keep.pdf"}, store)
 
     assert removed == 1
     assert keep.exists()
