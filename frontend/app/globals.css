@@ -56,10 +56,49 @@
   .field {
     @apply h-11 w-full rounded-xl border border-line bg-surface px-4 text-[0.9375rem] text-ink outline-none transition-[box-shadow,border-color] duration-200 placeholder:text-ink-3 focus:border-brand/50 focus:ring-4 focus:ring-brand/[0.12];
   }
-  /* Subtle indigo aurora for hero surfaces. */
+  /* Long-form legal/document prose. Authored pages stay clean; rhythm lives here. */
+  .prose-legal {
+    @apply text-[0.9375rem] leading-relaxed text-ink-2;
+  }
+  .prose-legal p + p,
+  .prose-legal p + ul,
+  .prose-legal ul + p {
+    margin-top: 0.75rem;
+  }
+  .prose-legal ul {
+    @apply list-disc space-y-1.5 pl-5;
+  }
+  .prose-legal strong {
+    @apply font-semibold text-ink;
+  }
+  .prose-legal a {
+    @apply font-medium text-brand hover:underline;
+  }
+  .prose-legal table {
+    @apply mt-3 w-full border-collapse text-[0.875rem];
+  }
+  .prose-legal th {
+    @apply border-b border-line-strong py-2 pr-4 text-left font-semibold text-ink;
+  }
+  .prose-legal td {
+    @apply border-b border-line py-2 pr-4 align-top;
+  }
+
+  /* Subtle indigo aurora for hero surfaces; the drift is glacial on purpose and
+     is stopped by the global reduced-motion rule above. */
   .aurora {
     background:
       radial-gradient(60% 80% at 15% 0%, rgba(99, 102, 241, 0.10), transparent 60%),
       radial-gradient(50% 70% at 95% 10%, rgba(79, 70, 229, 0.08), transparent 55%);
+    background-size: 180% 180%;
+    animation: aurora-drift 30s ease-in-out infinite alternate;
+  }
+  @keyframes aurora-drift {
+    from {
+      background-position: 0% 0%;
+    }
+    to {
+      background-position: 100% 35%;
+    }
   }
 }
