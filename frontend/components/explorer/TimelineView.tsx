@@ -13,12 +13,12 @@ const EVENT_ICON: Record<string, React.ElementType> = {
 };
 
 const EVENT_COLOR: Record<string, string> = {
-  payment: "#d97706",
+  payment: "#b45309",
   period: "#4f46e5",
-  deadline: "#dc2626",
+  deadline: "#b91c1c",
   obligation: "#6b7280",
-  rights: "#16a34a",
-  recurring: "#d97706",
+  rights: "#15803d",
+  recurring: "#b45309",
 };
 
 export function TimelineView({ events }: { events: TimelineEvent[] }) {

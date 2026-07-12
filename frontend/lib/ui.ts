@@ -2,15 +2,15 @@ export type SeverityKey = "critical" | "high" | "medium" | "low";
 
 export const SEVERITY: Record<SeverityKey, { label: string; color: string; tint: string }> = {
   critical: { label: "Critical", color: "#991b1b", tint: "#fef0f0" },
-  high: { label: "High", color: "#dc2626", tint: "#fef2f2" },
-  medium: { label: "Medium", color: "#d97706", tint: "#fff7ed" },
-  low: { label: "Low", color: "#16a34a", tint: "#f0fdf4" },
+  high: { label: "High", color: "#b91c1c", tint: "#fef2f2" },
+  medium: { label: "Medium", color: "#b45309", tint: "#fff7ed" },
+  low: { label: "Low", color: "#15803d", tint: "#f0fdf4" },
 };
 
 export const BAND: Record<string, { color: string; tint: string; tone: string }> = {
-  Low: { color: "#16a34a", tint: "#f0fdf4", tone: "Low risk" },
-  Moderate: { color: "#d97706", tint: "#fff7ed", tone: "Moderate risk" },
-  High: { color: "#dc2626", tint: "#fef2f2", tone: "High risk" },
+  Low: { color: "#15803d", tint: "#f0fdf4", tone: "Low risk" },
+  Moderate: { color: "#b45309", tint: "#fff7ed", tone: "Moderate risk" },
+  High: { color: "#b91c1c", tint: "#fef2f2", tone: "High risk" },
   Critical: { color: "#991b1b", tint: "#fef0f0", tone: "Critical risk" },
 };
 

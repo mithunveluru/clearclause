@@ -55,9 +55,9 @@ export function FinancialView({ impact }: { impact: FinancialImpact }) {
                 {impact.hidden_risks.map((r, i) => (
                   <li
                     key={i}
-                    className="flex items-start gap-2.5 rounded-xl border border-[#dc2626]/20 bg-[#fef2f2] px-4 py-3 text-[0.9375rem] leading-relaxed"
+                    className="flex items-start gap-2.5 rounded-xl border border-[#b91c1c]/20 bg-[#fef2f2] px-4 py-3 text-[0.9375rem] leading-relaxed"
                   >
-                    <span className="shrink-0 mt-0.5 text-[#dc2626]">⚠</span>
+                    <span className="shrink-0 mt-0.5 text-[#b91c1c]">⚠</span>
                     {r}
                   </li>
                 ))}

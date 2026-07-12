@@ -60,7 +60,7 @@ export function ClauseCard({
               className="block h-full rounded-full"
               style={{
                 width: `${Math.round(clause.confidence * 100)}%`,
-                backgroundColor: clause.confidence >= 0.8 ? "#16a34a" : clause.confidence >= 0.6 ? "#d97706" : "#dc2626",
+                backgroundColor: clause.confidence >= 0.8 ? "#15803d" : clause.confidence >= 0.6 ? "#b45309" : "#b91c1c",
               }}
             />
           </span>

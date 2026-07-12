@@ -1,7 +1,7 @@
 const META: Record<string, { label: string; color: string; tint: string }> = {
-  report_ready: { label: "Reviewed",  color: "#16a34a", tint: "#f0fdf4" },
-  failed:       { label: "Failed",    color: "#dc2626", tint: "#fef2f2" },
-  _default:     { label: "Analyzing", color: "#d97706", tint: "#fff7ed" },
+  report_ready: { label: "Reviewed",  color: "#15803d", tint: "#f0fdf4" },
+  failed:       { label: "Failed",    color: "#b91c1c", tint: "#fef2f2" },
+  _default:     { label: "Analyzing", color: "#b45309", tint: "#fff7ed" },
 };
 
 export function StatusBadge({ status }: { status: string }) {
