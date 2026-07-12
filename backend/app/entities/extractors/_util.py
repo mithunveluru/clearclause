@@ -2,6 +2,23 @@ import re
 
 _NUM = re.compile(r"([\d,]+(?:\.\d+)?)")
 
+# Keeps the unit with the number. Dropping it rendered "Processing Fee: 2.5" in the
+# UI — 2.5 percent or 2.5 rupees? On a document about money, an unlabelled number is
+# not a fact, it's a guess the reader has to make.
+AMOUNT = re.compile(
+    r"(?:rs\.?|inr|₹)\s*(?P<money>[\d,]+(?:\.\d+)?)"
+    r"|(?P<pct>[\d,]+(?:\.\d+)?)\s*(?:percent|%)"
+    r"|(?P<rupees>[\d,]+(?:\.\d+)?)\s*rupees",
+    re.I,
+)
+
+
+def amount_with_unit(match: re.Match) -> str:
+    """Render an AMOUNT match as the reader should see it: '2.5%' or '₹50,000'."""
+    if match.group("pct"):
+        return f"{match.group('pct')}%"
+    return f"₹{match.group('money') or match.group('rupees')}"
+
 
 _BOUNDARY = re.compile(r"\.\s|\.$|\n")
 
