@@ -2,6 +2,7 @@
 import { m } from "framer-motion";
 import { ArrowRight, Check } from "lucide-react";
 import { ButtonLink } from "@/components/ui/Button";
+import { HeroPreview } from "@/components/HeroPreview";
 import { Container } from "@/components/ui/Surface";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { TopBar } from "@/components/ui/TopBar";
@@ -95,6 +96,8 @@ export default function Home() {
                 </ButtonLink>
               </m.div>
             </m.div>
+
+            <HeroPreview />
           </Container>
         </div>
 

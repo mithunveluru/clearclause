@@ -1,6 +1,6 @@
 "use client";
 import { AnimatePresence, m } from "framer-motion";
-import { ArrowLeft, Lock } from "lucide-react";
+import { ArrowLeft, CheckCircle, Lock } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -13,7 +13,7 @@ import {
 import { AnalysisProgress } from "@/components/AnalysisProgress";
 import { DocTypeBadge } from "@/components/DocTypeBadge";
 import DownloadReportButton from "@/components/DownloadReportButton";
-import { ClauseCard, type ReadingMode } from "@/components/explorer/ClauseCard";
+import { type ReadingMode } from "@/components/explorer/ClauseCard";
 import { ExplorerNav } from "@/components/explorer/ExplorerNav";
 import { FinancialView } from "@/components/explorer/FinancialView";
 import { GuidedWalkthrough } from "@/components/explorer/GuidedWalkthrough";
@@ -111,7 +111,7 @@ export default function DocumentDetail() {
           <h1 className="t-headline mt-2.5 break-words">{doc.original_filename}</h1>
           <Surface className="mt-10 max-w-xl px-8 py-9">
             <h2 className="t-section mb-1">Analyzing your document</h2>
-            <p className="t-caption mb-7">This usually takes a few seconds. You don't need to do anything.</p>
+            <p className="t-caption mb-7">This usually takes a few seconds. You don&apos;t need to do anything.</p>
             <AnalysisProgress status={doc.status} />
             <p className="mt-8 flex items-center gap-1.5 text-[0.75rem] text-ink-3">
               <Lock className="h-3 w-3" strokeWidth={2} />
@@ -226,11 +226,11 @@ function ContentPane({
   if (active === "strengths") {
     return (
       <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-        <h2 className="mb-4 text-[1.375rem] font-bold tracking-tight">What's in Your Favour</h2>
+        <h2 className="mb-4 text-[1.375rem] font-bold tracking-tight">What&apos;s in Your Favour</h2>
         <ul className="space-y-3">
           {explorer.strengths.map((s, i) => (
             <li key={i} className="flex items-start gap-3 rounded-xl border border-[#16a34a]/20 bg-[#f0fdf4] px-4 py-3 text-[0.9375rem] leading-relaxed">
-              <span className="mt-0.5 shrink-0 text-[#16a34a]">✓</span>
+              <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#16a34a]" strokeWidth={2} />
               {s}
             </li>
           ))}

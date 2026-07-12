@@ -1,5 +1,5 @@
 "use client";
-import { AnimatePresence, m } from "framer-motion";
+import { m } from "framer-motion";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import { useState } from "react";
 import type { WalkthroughStep } from "@/lib/api";
