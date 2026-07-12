@@ -11,9 +11,13 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 
+from app.core import lockout
 from app.core.redis import redis_client
 from app.db.session import SessionLocal
 from app.main import app
+
+_last_email = ""
+
 
 async def _reachable() -> bool:
     try:
@@ -25,19 +29,24 @@ async def _reachable() -> bool:
         return False
 
 
+async def _clear_rate_limit_keys() -> None:
+    keys = [k async for k in redis_client.scan_iter("rl:*")]
+    if keys:
+        await redis_client.delete(*keys)
+
+
 @pytest_asyncio.fixture(autouse=True)
 async def _clear_rate_limits():
     if await _reachable():
-        keys = [k async for k in redis_client.scan_iter("rl:*")]
-        if keys:
-            await redis_client.delete(*keys)
+        await _clear_rate_limit_keys()
 
 
 @asynccontextmanager
 async def _login():
     """A client carrying a fresh user's auth cookies."""
+    global _last_email
     client = AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
-    email = f"session-{uuid.uuid4().hex}@example.com"
+    email = _last_email = f"session-{uuid.uuid4().hex}@example.com"
     password = "correct horse battery"
     r = await client.post("/api/v1/auth/register", json={"email": email, "password": password})
     assert r.status_code == 201, r.text
@@ -89,3 +98,45 @@ async def test_logout_is_reachable_by_the_refresh_cookie():
     async with _login() as client:
         r = await client.post("/api/v1/auth/logout")
         assert "cc_refresh" in r.request.headers.get("cookie", "")
+
+
+async def test_duplicate_registration_is_rejected():
+    if not await _reachable():
+        pytest.skip("database/redis not reachable")
+
+    async with _login() as client:
+        # _login already registered this address; registering it again must not
+        # silently succeed — that produced "Invalid email or password" on signup.
+        r = await client.post("/api/v1/auth/register", json={"email": _last_email, "password": "x" * 12})
+        assert r.status_code == 409
+        assert "already registered" in r.json()["detail"].lower()
+
+
+async def test_account_locks_after_repeated_failures():
+    if not await _reachable():
+        pytest.skip("database/redis not reachable")
+
+    async with _login() as client:
+        email = _last_email
+        for _ in range(lockout.MAX_FAILURES):
+            # A real attacker spreads attempts across many IPs to stay under the
+            # per-IP rate limit — which is the entire reason a per-account lock has
+            # to exist. Clearing the IP window each round reproduces that from one
+            # test client; otherwise the rate limiter answers first and we would be
+            # testing it instead of the lockout.
+            await _clear_rate_limit_keys()
+            r = await client.post("/api/v1/auth/login", json={"email": email, "password": "wrong"})
+            assert r.status_code == 401
+
+        # Locked to the account, not the IP — the correct password is refused too.
+        await _clear_rate_limit_keys()
+        r = await client.post(
+            "/api/v1/auth/login", json={"email": email, "password": "correct horse battery"}
+        )
+        assert r.status_code == 429
+
+        await lockout.clear(email)
+        r = await client.post(
+            "/api/v1/auth/login", json={"email": email, "password": "correct horse battery"}
+        )
+        assert r.status_code == 200, "clearing the lock should let the real user back in"

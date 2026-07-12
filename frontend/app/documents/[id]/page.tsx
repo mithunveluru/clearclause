@@ -1,15 +1,18 @@
 "use client";
 import { AnimatePresence, m } from "framer-motion";
-import { ArrowLeft, CheckCircle, Lock } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle, Lock } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
+  getAiSummary,
   getDocument,
   getExplorer,
+  type AISummary,
   type Doc,
   type ExplorerDoc,
 } from "@/lib/api";
+import { AISummaryPanel } from "@/components/AISummaryPanel";
 import { AnalysisProgress } from "@/components/AnalysisProgress";
 import { DocTypeBadge } from "@/components/DocTypeBadge";
 import DownloadReportButton from "@/components/DownloadReportButton";
@@ -28,6 +31,11 @@ import { TopBar } from "@/components/ui/TopBar";
 const fullyReady = (d: Doc) =>
   d.status === "failed" || (d.status === "report_ready" && d.qa_ready);
 
+// A garbled scan yields few clauses, which reads as "nothing risky here". Say so
+// instead. null means the text came from the PDF's own text layer — nothing to doubt.
+const isLowConfidenceScan = (d: Doc) =>
+  d.ocr_confidence !== null && d.ocr_confidence < 60;
+
 export default function DocumentDetail() {
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
@@ -35,6 +43,7 @@ export default function DocumentDetail() {
 
   const [doc, setDoc] = useState<Doc | null>(null);
   const [explorer, setExplorer] = useState<ExplorerDoc | null>(null);
+  const [aiSummary, setAiSummary] = useState<AISummary | null>(null);
   const [active, setActive] = useState("overview");
   const [mode, setMode] = useState<ReadingMode>("consumer");
   const [walkthrough, setWalkthrough] = useState(false);
@@ -43,6 +52,11 @@ export default function DocumentDetail() {
     const e = await getExplorer(docId);
     if (e) setExplorer(e);
   }, [docId]);
+
+  // Only produced when AI_MODE is summary_only or full; absent otherwise.
+  useEffect(() => {
+    if (doc?.ai_summary_ready && !aiSummary) getAiSummary(docId).then(setAiSummary).catch(() => {});
+  }, [doc?.ai_summary_ready, aiSummary, docId]);
 
   useEffect(() => {
     document.title = doc
@@ -161,6 +175,24 @@ export default function DocumentDetail() {
             </div>
 
             <div className="mx-auto max-w-3xl px-6 py-10">
+              {isLowConfidenceScan(doc) && (
+                <div
+                  role="status"
+                  className="mb-8 flex items-start gap-3 rounded-xl border border-[#f59e0b]/30 bg-[#fffbeb] px-4 py-3"
+                >
+                  <AlertTriangle
+                    className="mt-0.5 h-4 w-4 shrink-0 text-[#b45309]"
+                    strokeWidth={2}
+                    aria-hidden
+                  />
+                  <p className="text-[0.9375rem] leading-relaxed text-[#78350f]">
+                    <span className="font-medium">This scan was hard to read.</span>{" "}
+                    Some text may have been missed, so this review could be incomplete —
+                    a clearer scan or the original PDF will give a more reliable result.
+                  </p>
+                </div>
+              )}
+
               <AnimatePresence mode="wait">
                 <ContentPane
                   key={active}
@@ -169,6 +201,7 @@ export default function DocumentDetail() {
                   mode={mode}
                   docId={docId}
                   qaReady={!!doc.qa_ready}
+                  aiSummary={active === "overview" ? aiSummary : null}
                   onSection={setActive}
                 />
               </AnimatePresence>
@@ -202,6 +235,7 @@ function ContentPane({
   mode,
   docId,
   qaReady,
+  aiSummary,
   onSection,
 }: {
   active: string;
@@ -209,9 +243,17 @@ function ContentPane({
   mode: ReadingMode;
   docId: number;
   qaReady: boolean;
+  aiSummary: AISummary | null;
   onSection: (id: string) => void;
 }) {
-  if (active === "overview")  return <OverviewView explorer={explorer} onSection={onSection} />;
+  if (active === "overview") {
+    return (
+      <>
+        <OverviewView explorer={explorer} onSection={onSection} />
+        {aiSummary && <AISummaryPanel summary={aiSummary} />}
+      </>
+    );
+  }
   if (active === "financial") return <FinancialView impact={explorer.financial_impact} />;
   if (active === "timeline")  return <TimelineView events={explorer.timeline} />;
   if (active === "questions" || active === "qa") {

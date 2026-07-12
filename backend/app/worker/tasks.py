@@ -33,18 +33,21 @@ async def _cleanup() -> dict:
     Session = async_sessionmaker(engine, expire_on_commit=False)
     try:
         async with Session() as db:
-            docs = (await db.execute(select(Document))).scalars().all()
-            stale = [d for d in docs if d.created_at < cutoff]
+            # Filter in SQL. Loading every document to find the stale ones grew the
+            # job's memory with the whole table.
+            stale = (
+                await db.execute(select(Document).where(Document.created_at < cutoff))
+            ).scalars().all()
             for d in stale:
                 files.delete_file(d.file_path)
                 await db.delete(d)  # cascades to clauses/findings/scores/reports rows
             await db.commit()
 
-            keep = {d.file_path for d in (await db.execute(select(Document))).scalars().all()}
+            # The orphan sweep does need every referenced path, but only the paths —
+            # not the hydrated rows.
+            keep = set((await db.execute(select(Document.file_path))).scalars().all())
             keep |= {
-                r.pdf_path
-                for r in (await db.execute(select(Report))).scalars().all()
-                if r.pdf_path
+                p for p in (await db.execute(select(Report.pdf_path))).scalars().all() if p
             }
             orphans = _sweep_orphans(keep)
             return {"stale_docs": len(stale), "orphan_files": orphans}

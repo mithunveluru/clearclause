@@ -74,6 +74,8 @@ def _blocks_from_page(page, page_number: int) -> list[dict]:
                 # PDF points, not the rendered pixels the OCR path reports. Only ever
                 # stored, never rendered, so the two units never meet.
                 "bbox": [x0, top, x1 - x0, bottom - top],
+                # Read straight from the file — there is no OCR step here to misread it.
+                "confidence": 100.0,
             }
         )
     return blocks

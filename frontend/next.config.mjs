@@ -23,7 +23,7 @@ const nextConfig = {
               scriptSrc,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob:",
-              "font-src 'self' https://fonts.gstatic.com",
+              "font-src 'self'",
               `connect-src 'self' ${API_URL}`,
               "frame-ancestors 'none'",
             ].join("; "),

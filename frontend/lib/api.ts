@@ -10,6 +10,7 @@ export type Doc = {
   status: string;
   qa_ready: boolean;
   ai_summary_ready: boolean;
+  ocr_confidence: number | null;
   created_at: string;
 };
 
@@ -37,27 +38,6 @@ export type Score = {
     cancellation: number;
   };
   cost: Record<string, number | null>;
-};
-
-export type Entity = {
-  entity_type: string;
-  entity_value: string;
-  confidence: number;
-  page_number: number | null;
-  source_text: string | null;
-};
-
-export type Analysis = {
-  analyzer_type: string;
-  status: string;
-  result: {
-    analyzer: string;
-    family?: string;
-    headline_metric?: { name: string; value: number; band: string } | null;
-    summary?: string | null;
-    strengths?: string[];
-    recommendations?: string[];
-  } | null;
 };
 
 export type AISummary = { content: string; model: string | null; created_at: string };
@@ -207,15 +187,6 @@ export async function logout(): Promise<void> {
   await fetch(`${BASE}/api/v1/auth/logout`, { method: "POST", credentials: "include" });
 }
 
-export async function checkAuth(): Promise<boolean> {
-  try {
-    const res = await fetch(`${BASE}/api/v1/me`, { credentials: "include" });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
 export const listDocuments = async (): Promise<Doc[]> =>
   (await req("/api/v1/documents")).json();
 
@@ -234,40 +205,8 @@ export const deleteDocument = (id: number) =>
 export const analyzeDocument = async (id: number): Promise<{ status: string }> =>
   (await req(`/api/v1/documents/${id}/analyze`, { method: "POST" })).json();
 
-export async function getFindings(id: number): Promise<Finding[]> {
-  try {
-    return await (await req(`/api/v1/documents/${id}/findings`)).json();
-  } catch {
-    return [];
-  }
-}
-
-export async function getScore(id: number): Promise<Score | null> {
-  try {
-    return await (await req(`/api/v1/documents/${id}/score`)).json();
-  } catch {
-    return null;
-  }
-}
-
 export const fetchReportBlob = async (id: number): Promise<Blob> =>
   (await req(`/api/v1/documents/${id}/report`)).blob();
-
-export async function getEntities(id: number): Promise<Entity[]> {
-  try {
-    return await (await req(`/api/v1/documents/${id}/entities`)).json();
-  } catch {
-    return [];
-  }
-}
-
-export async function getAnalysis(id: number): Promise<Analysis | null> {
-  try {
-    return await (await req(`/api/v1/documents/${id}/analysis`)).json();
-  } catch {
-    return null;
-  }
-}
 
 export async function getAiSummary(id: number): Promise<AISummary | null> {
   try {
