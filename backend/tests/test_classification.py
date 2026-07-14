@@ -201,7 +201,7 @@ def test_ambiguous_doc_has_candidates():
 # Partial-match path: confirm not UNKNOWN
 
 def test_partial_match_routes_confirm_not_unknown():
-    # "receipt" alone scores 2 — should suggest receipt with confirm, not UNKNOWN/manual
+    # "receipt" scores 2: confirm, not UNKNOWN
     r = clf.classify("Please retain this receipt for your records.")
     assert not (
         r.classified_type == ClassifiedType.UNKNOWN and r.routing_action == "manual"

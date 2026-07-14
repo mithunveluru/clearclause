@@ -16,10 +16,7 @@ class AuthService:
         self.users = users
 
     async def register(self, email: str, password: str) -> None:
-        # Tells the caller the address is taken. That is enumerable, but the silent
-        # no-op it replaces was worse: the client signs in straight after
-        # registering, so a taken address produced "Invalid email or password" on
-        # the signup screen. Enumeration is bounded by the 5/min limit on this route.
+        # Enumerable, but bounded by the 5/min limit
         if await self.users.get_by_email(email):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT, detail="Email already registered"
@@ -34,8 +31,7 @@ class AuthService:
             )
         user = await self.users.get_by_email(email)
         if not user or not verify_password(password, user.password_hash):
-            # Counted against the account, not the IP — credential stuffing spreads
-            # itself across IPs, which is exactly what the rate limiter cannot see.
+            # Per-account: credential stuffing spreads across IPs
             await lockout.record_failure(email)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

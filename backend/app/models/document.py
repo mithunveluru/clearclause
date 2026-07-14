@@ -25,8 +25,7 @@ class Document(Base, TimestampMixin):
     analysis_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     qa_ready: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     ai_summary_ready: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    # Mean OCR confidence, 0-100. None when the text came from a PDF's own text
-    # layer, where there is no OCR step and so nothing to be uncertain about.
+    # Mean OCR confidence; None for a text layer
     ocr_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
 
 

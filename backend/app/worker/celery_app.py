@@ -11,12 +11,10 @@ celery_app = Celery(
 )
 celery_app.conf.task_track_started = True
 
-# No task may run forever: a pathological document must not hold the shared queue.
-# Soft limit raises inside the task (stage marks the doc failed); hard limit kills it.
-celery_app.conf.task_soft_time_limit = 540  # 9 min
+# One document must not hold the queue forever
+celery_app.conf.task_soft_time_limit = 540  # 9 min, raises inside the task
 celery_app.conf.task_time_limit = 600       # 10 min, SIGKILL backstop
 
-# Staged pipeline routing (PIPELINE=staged). Worker consumes all of these queues.
 celery_app.conf.task_routes = {
     "stage.ocr": {"queue": "ocr_queue"},
     "stage.classify": {"queue": "analysis_queue"},
@@ -29,8 +27,7 @@ celery_app.conf.task_routes = {
     "stage.ai_summary": {"queue": "ai_queue"},
 }
 
-# Daily stale-file cleanup. Runs via embedded beat (worker started with -B).
-# ponytail: embedded beat is fine for one worker; use a separate beat service if scaled out.
+# ponytail: embedded beat; separate service if scaled out
 celery_app.conf.beat_schedule = {
     "cleanup-stale-files": {
         "task": "cleanup_stale_files",
@@ -41,7 +38,7 @@ celery_app.conf.beat_schedule = {
 
 @worker_process_init.connect
 def _init_worker_telemetry(**_kwargs):
-    # Only worker processes set up worker-side telemetry (not the API importing this).
+    # Worker processes only, not the API importing this
     from app.core.logredact import install_redaction
     from app.telemetry import instrument_celery, instrument_redis, setup_telemetry
 

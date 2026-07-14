@@ -4,12 +4,7 @@ import { ArrowRight, Check, FileUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { easeSmooth } from "@/components/ui/motion";
 
-/**
- * Scroll-driven visualization of the real workflow, built from the product's
- * own visual vocabulary (dropzone, analysis stages, report card) — the landing
- * page shows what happens instead of describing it. Entrances are one-time
- * (whileInView once) and honor prefers-reduced-motion via MotionConfig.
- */
+/** Scroll-driven walkthrough of the real pipeline stages. */
 
 const STAGES = ["Reading pages", "Extracting clauses", "Checking risks"];
 
@@ -44,7 +39,7 @@ function Panel({
   );
 }
 
-/** Counts 0 → value when scrolled into view; jumps straight there under reduced motion. */
+/** Counts up on scroll; jumps straight there under reduced motion. */
 function CountUpScore({ value, color }: { value: number; color: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: "-40px" });

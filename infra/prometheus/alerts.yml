@@ -1,14 +1,10 @@
-# Alerts for the ways ClearClause degrades quietly rather than failing loudly.
-# A down service is obvious. These are not: the app keeps returning 200s while
-# doing the wrong thing, which is the failure mode that actually reaches users.
+# Returns 200s while doing the wrong thing
 
 groups:
   - name: clearclause-degradation
     rules:
       - alert: RateLimiterUnavailable
-        # Redis is gone, so the limiter fails open and every login, upload and Q&A is
-        # allowed through unthrottled. The app looks healthy. Brute-force protection
-        # and account lockout are both off until Redis comes back.
+        # Limiter fails open; brute-force protection is off
         expr: increase(clearclause_degraded_events_total{kind="rate_limiter_unavailable"}[5m]) > 0
         for: 1m
         labels:
@@ -20,11 +16,7 @@ groups:
             not counting failures. The API is still serving 200s. Restore Redis.
 
       - alert: LowOcrConfidenceSpike
-        # A garbled scan produces few clauses, and few clauses render as "no risks
-        # found" — the app confidently tells someone their contract is clean because
-        # it could not read it. Users see a warning banner, but a spike means
-        # something upstream (a bad uploader, a broken renderer) is systematically
-        # feeding us documents we cannot read.
+        # Unreadable scans render as "no risks found"
         expr: increase(clearclause_degraded_events_total{kind="low_ocr_confidence"}[30m]) > 5
         for: 5m
         labels:

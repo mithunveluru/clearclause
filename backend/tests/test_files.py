@@ -20,7 +20,7 @@ def test_detect_source_type_by_magic_bytes():
 
 
 def test_detect_source_type_rejects_disguised_content():
-    # .pdf extension but plain-text content must not pass the content sniff.
+    # .pdf extension, plain-text content
     with pytest.raises(ValueError):
         detect_source_type(b"this is not really a pdf")
 
@@ -35,8 +35,7 @@ def _pdf_of(pages: int, path: str) -> str:
 
 
 def test_pdf_page_cap(tmp_path):
-    # A tiny PDF can still hold enough pages to OOM the OCR worker; the byte-size
-    # cap does not bound page count, so this one does.
+    # The byte-size cap does not bound page count
     ok = _pdf_of(settings.MAX_PDF_PAGES, str(tmp_path / "ok.pdf"))
     assert validate_pdf_pages(ok) == settings.MAX_PDF_PAGES
 

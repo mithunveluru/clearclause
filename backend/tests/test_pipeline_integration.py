@@ -26,10 +26,10 @@ def test_risky_document_full_pipeline():
     assert r["band"] in ("Moderate", "High", "Critical")
     assert r["cats"]["fee_opacity"] <= 20 and r["cats"]["penalty"] <= 15
 
-    # true-cost picked up the currency amount (Rs 500), not the percentages
+    # true-cost takes the currency amount, not percentages
     assert r["cost"]["late_fee"] == 500.0
 
-    # report renders and contains the score + a finding action
+    # report renders with the score and an action
     html = r["html"]
     assert f"{r['cats']['total']}/100" in html
     assert "processing fee" in html.lower()

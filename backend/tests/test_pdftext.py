@@ -57,8 +57,7 @@ def test_digital_pdf_uses_the_text_layer_and_never_ocrs(tmp_path):
 
 
 def test_sentences_are_not_split_across_line_breaks(tmp_path):
-    # One block per line would cut this sentence in half and the clause would be
-    # lost downstream, where blocks are split into sentences.
+    # One block per line would split the clause
     path = _digital_pdf(
         tmp_path / "wrap.pdf",
         [["The subscription will automatically renew each month\nunless cancelled in writing."]],
@@ -79,7 +78,7 @@ def test_paragraphs_are_kept_apart(tmp_path):
 
 
 def test_page_without_a_text_layer_falls_back_to_ocr(tmp_path):
-    # Page 1 has text, page 2 is blank (a scanned page carries no text layer).
+    # Page 1 has text; page 2 is a scan
     path = _digital_pdf(
         tmp_path / "mixed.pdf",
         [["A processing fee of 2 percent is payable upon disbursal of the loan."], []],

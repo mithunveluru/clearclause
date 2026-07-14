@@ -52,8 +52,7 @@ class LocalStorage(Storage):
         self.root = root or settings.STORAGE_DIR
 
     def _resolve(self, key: str) -> str:
-        # Legacy rows stored an absolute path rather than a key. Honour those so an
-        # existing database keeps working after the switch.
+        # Legacy rows hold an absolute path, not a key
         if os.path.isabs(key):
             return key
         path = os.path.normpath(os.path.join(self.root, key))

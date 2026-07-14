@@ -1,4 +1,4 @@
-# Importing this package registers every model on Base.metadata for Alembic autogenerate.
+# Registers every model on Base.metadata for Alembic autogenerate
 from app.models.user import User  # noqa: F401
 from app.models.document import Document, Job  # noqa: F401
 from app.models.extracted_block import ExtractedBlock  # noqa: F401

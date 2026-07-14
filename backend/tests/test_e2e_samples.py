@@ -5,7 +5,7 @@ import pytest
 
 from tests.pipeline_helper import run_pipeline
 
-# /sample-data in the container; repo-relative when run from a CI checkout.
+# /sample-data in the container; repo-relative in CI
 _CANDIDATES = [Path("/sample-data"), Path(__file__).resolve().parents[2] / "sample-data"]
 SAMPLE_DIR = next((p for p in _CANDIDATES if p.is_dir()), None)
 

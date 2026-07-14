@@ -30,7 +30,7 @@ async def upload(
     svc: DocumentService = Depends(_service),
 ):
     max_bytes = settings.MAX_UPLOAD_MB * 1024 * 1024
-    content = await file.read(max_bytes + 1)  # bounded read: never load more than the cap
+    content = await file.read(max_bytes + 1)  # bounded read
     if len(content) > max_bytes:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
@@ -39,7 +39,6 @@ async def upload(
     if not content:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file")
     doc = await svc.upload(user.id, file.filename or "upload", content)
-    # Analysis starts automatically — no separate Analyze step.
     dispatch(doc.id, user.id)
     return doc
 

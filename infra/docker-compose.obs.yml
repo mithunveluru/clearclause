@@ -1,8 +1,8 @@
-# Observability stack; run with: docker compose -f docker-compose.yml -f infra/docker-compose.obs.yml up
-# paths are relative to the repo root (first -f file)
+# Observability stack, layered onto the root compose file
+# Paths are relative to the repo root
 
 services:
-  # Point app + worker at the collector (overrides the empty default in .env).
+  # Overrides the empty default in .env
   backend:
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
@@ -12,7 +12,7 @@ services:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
 
   otel-collector:
-    # 0.116.0 images fail to exec on some hosts (runc/base-image change); 0.111.0 is stable.
+    # 0.116.0 fails to exec on some hosts
     image: otel/opentelemetry-collector-contrib:0.111.0
     command: ["--config=/etc/otel/collector.yaml"]
     volumes:

@@ -37,8 +37,7 @@ class DocumentService:
             ext = files.validate_extension(filename)
             source_type = files.detect_source_type(content)
             if source_type == "pdf":
-                # Counting pages needs the bytes on disk. Inspect a throwaway copy, so
-                # a rejected upload never reaches storage in the first place.
+                # Throwaway copy: a rejected upload never reaches storage
                 with storage.temp_file(content, ext) as path:
                     files.validate_pdf_pages(path)
         except ValueError as e:
@@ -61,7 +60,7 @@ class DocumentService:
 
     async def delete(self, doc_id: int, user_id: int) -> None:
         doc = await self.get(doc_id, user_id)
-        # Remove the report object too (the DB row cascades, the object would orphan).
+        # The DB row cascades; the object would orphan
         report = await ReportRepository(self.repo.db).get(doc_id)
         if report and report.pdf_path:
             self.store.delete(report.pdf_path)

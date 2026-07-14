@@ -81,7 +81,7 @@ class ReportService:
             },
         )
 
-        # reportlab writes to a path; render locally, then hand the bytes to storage.
+        # reportlab writes to a path, not bytes
         key = storage.new_key("reports", ".pdf")
         with storage.temp_file(b"", ".pdf") as tmp:
             build_pdf(summary, tmp)

@@ -12,7 +12,7 @@ REFRESH_TTL = timedelta(days=7)
 
 
 def hash_password(password: str) -> str:
-    # bcrypt ignores bytes past 72; truncate explicitly to avoid a hard error.
+    # bcrypt errors past 72 bytes
     return bcrypt.hashpw(password.encode()[:72], bcrypt.gensalt()).decode()
 
 
@@ -27,7 +27,7 @@ def _make_token(subject: str, token_type: str, ttl: timedelta) -> str:
         "type": token_type,
         "iat": now,
         "exp": now + ttl,
-        "jti": uuid.uuid4().hex,  # names this token so it can be revoked individually
+        "jti": uuid.uuid4().hex,  # revocable individually
     }
     return jwt.encode(payload, settings.JWT_SECRET, algorithm=ALGORITHM)
 

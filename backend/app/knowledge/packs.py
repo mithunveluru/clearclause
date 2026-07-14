@@ -5,8 +5,8 @@ during Q&A to ground AI answers in applicable law. Never used as the source of
 findings; findings come from the rule engine only.
 """
 
-# id must be unique and stable (used as Qdrant point id via hash).
-# families: consumer_finance | rental | property | insurance | subscription
+# id must be stable: hashed into a Qdrant id
+# families: consumer_finance | rental | property | insurance
 KNOWLEDGE_PACKS: list[dict] = [
     # Consumer Finance
     {

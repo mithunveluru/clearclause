@@ -58,7 +58,7 @@ def test_production_config_accepts_a_secure_deployment():
     ],
 )
 def test_production_refuses_to_start_insecure(override):
-    # The dev defaults must never survive into production by omission.
+    # Dev defaults must never survive into production
     with pytest.raises(ValidationError):
         Settings(**{**PROD, **override})
 

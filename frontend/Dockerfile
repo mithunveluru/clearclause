@@ -3,24 +3,19 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-# npm ci installs exactly what the lockfile pins and fails if package.json has
-# drifted from it. `npm install` re-resolved versions on every build, so no two
-# builds were guaranteed to contain the same dependency tree.
+# ci, not install: reproducible, fails on lockfile drift
 RUN npm ci
 
 COPY . .
 
-# NEXT_PUBLIC_* is inlined into the client bundle at build time, not read at run
-# time — so the API URL has to be known here. Defaults to localhost for dev builds;
-# the production compose passes the real one.
+# NEXT_PUBLIC_* is inlined at build time, not runtime
 ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 
-# Production build. Dev compose overrides this CMD with `npm run dev` + a
-# bind mount, so local development is unaffected; the GHCR image ships prod.
+# Dev compose overrides this CMD with `npm run dev`
 RUN npm run build
 
-# Drop root: the node image ships an unprivileged `node` user (uid 1000).
+# Drop root
 RUN chown -R node:node /app
 USER node
 

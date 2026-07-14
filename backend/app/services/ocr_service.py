@@ -30,19 +30,16 @@ class OCRService:
         """OCR the document's file and persist its blocks. Returns block count."""
 
         def read() -> list[dict]:
-            # pdfplumber/pdf2image take a path, not bytes. On S3 this is a temp copy
-            # that is deleted on exit — the plaintext must not outlive the task.
+            # Temp copy; plaintext must not outlive the task
             with self.store.local_path(document.file_path) as path:
                 return self.provider.extract(path)
 
-        # extract() is CPU-bound and blocking; keep the event loop free.
+        # CPU-bound; keep the event loop free
         blocks = await asyncio.to_thread(read)
 
         confidence = self._mean_confidence(blocks)
         if confidence is not None and confidence < settings.OCR_LOW_CONFIDENCE:
-            # Garbled text produces no findings, and "no findings" renders as a clean
-            # contract. The user is warned in the UI; a spike here means something
-            # upstream is wrong, so it is a metric and not just a log line.
+            # Garbled text yields no findings, so reads "clean"
             count_degraded("low_ocr_confidence")
             logger.warning(
                 "document %s: low OCR confidence %.0f — analysis may be incomplete",
