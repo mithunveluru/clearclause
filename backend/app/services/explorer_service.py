@@ -97,7 +97,7 @@ _ISSUE_QUESTIONS: dict[str, tuple[str, str]] = {
     "missing_cost_disclosure": ("What is the total amount I will pay over the full term, including all fees?", "cost"),
 }
 
-# only included when the matching section has findings (or section_id == "questions")
+# Included only when the matching section has findings
 _WALKTHROUGH_TEMPLATES = [
     (1, "What you'll pay",      "financial_terms", "Review all costs, fees, and rates in this agreement.",
      "These are the actual charges — compare with what was advertised to you."),

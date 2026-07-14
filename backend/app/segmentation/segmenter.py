@@ -7,7 +7,7 @@ import re
 import unicodedata
 from collections import OrderedDict
 
-# clause_type -> keywords; order is priority (penalty before fee, so "late payment charge" wins)
+# clause_type -> keywords; order is priority (penalty before fee)
 CLAUSE_KEYWORDS: "OrderedDict[str, tuple[str, ...]]" = OrderedDict(
     [
         ("penalty", ("penalty", "penal", "late payment", "late fee", "default",

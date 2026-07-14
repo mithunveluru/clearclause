@@ -1,8 +1,7 @@
 """Best-effort true-cost extraction from clause text.
 
-ponytail: regex amount-grab, no principal resolution. Percentages are stored as
-their numeric value but NOT summed into estimated_true_cost (needs a principal we
-don't reliably have). Upgrade path: resolve principal, then compound percents.
+ponytail: percentages are stored but never summed — that needs a principal we
+don't reliably have. Upgrade path: resolve principal, then compound.
 """
 import re
 

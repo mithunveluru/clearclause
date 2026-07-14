@@ -1,10 +1,7 @@
 import type { AISummary } from "@/lib/api";
 import { Surface } from "@/components/ui/Surface";
 
-// The model returns markdown ("**Key Risks:** ..." plus bullets). Rendering that into a
-// single <p> printed the asterisks literally and collapsed every newline into one
-// unbroken block. Handling the two constructs it actually emits — bold spans and
-// bullets — is enough; a markdown dependency for this would be overkill.
+// The only two constructs the model emits
 function Bold({ text }: { text: string }) {
   return (
     <>

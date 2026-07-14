@@ -31,8 +31,7 @@ import { TopBar } from "@/components/ui/TopBar";
 const fullyReady = (d: Doc) =>
   d.status === "failed" || (d.status === "report_ready" && d.qa_ready);
 
-// A garbled scan yields few clauses, which reads as "nothing risky here". Say so
-// instead. null means the text came from the PDF's own text layer — nothing to doubt.
+// A bad scan reads as "no risks found"
 const isLowConfidenceScan = (d: Doc) =>
   d.ocr_confidence !== null && d.ocr_confidence < 60;
 
@@ -53,7 +52,7 @@ export default function DocumentDetail() {
     if (e) setExplorer(e);
   }, [docId]);
 
-  // Only produced when AI_MODE is summary_only or full; absent otherwise.
+  // Only produced when AI_MODE is summary_only or full
   useEffect(() => {
     if (doc?.ai_summary_ready && !aiSummary) getAiSummary(docId).then(setAiSummary).catch(() => {});
   }, [doc?.ai_summary_ready, aiSummary, docId]);
@@ -74,7 +73,7 @@ export default function DocumentDetail() {
 
   useEffect(() => {
     if (!doc || fullyReady(doc)) return;
-    // Backoff: 2.5 → 3.5 → 5 → 7.5 → 10s cap
+    // Backoff, capped at 10s
     const DELAYS = [2500, 3500, 5000, 7500, 10000];
     let tick = 0;
     let afterReport = 0;

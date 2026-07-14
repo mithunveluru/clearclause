@@ -28,7 +28,7 @@ class KnowledgeIndexService:
                 return 0
 
             texts = [p["text"] for p in KNOWLEDGE_PACKS]
-            # Embed in one batch (first was already embedded; rebuild to avoid partial state)
+            # One batch; rebuild avoids partial state
             all_texts = [first_entry["text"]] + texts[1:]
             vectors = [sample_vector] + self.embedder.embed(all_texts[1:])
             self.store.upsert(KNOWLEDGE_PACKS, vectors)

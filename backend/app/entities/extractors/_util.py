@@ -2,9 +2,7 @@ import re
 
 _NUM = re.compile(r"([\d,]+(?:\.\d+)?)")
 
-# Keeps the unit with the number. Dropping it rendered "Processing Fee: 2.5" in the
-# UI — 2.5 percent or 2.5 rupees? On a document about money, an unlabelled number is
-# not a fact, it's a guess the reader has to make.
+# Keep the unit: 2.5 percent or 2.5 rupees?
 AMOUNT = re.compile(
     r"(?:rs\.?|inr|₹)\s*(?P<money>[\d,]+(?:\.\d+)?)"
     r"|(?P<pct>[\d,]+(?:\.\d+)?)\s*(?:percent|%)"

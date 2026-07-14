@@ -59,9 +59,7 @@ def test_rotated_scans_are_read(rotation, tmp_path):
     _page(rotation).save(path)
 
     blocks = get_ocr_provider("tesseract").extract(path)
-    # The bundled bitmap font kerns tightly, so Tesseract runs some words together
-    # ("willautorenew"). Strip spaces before matching: we are testing that the page
-    # was turned the right way up, not how the test font renders.
+    # The test font kerns tightly; words run together
     text = " ".join(b["text"].lower() for b in blocks)
     squashed = text.replace(" ", "").replace("-", "")
 

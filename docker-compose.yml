@@ -1,5 +1,4 @@
-# Core dev services; observability stack lives in infra/docker-compose.obs.yml.
-# ponytail: single root compose so the spec's `docker compose up` works as-is.
+# Core dev services; observability stack lives in infra/docker-compose.obs.yml
 
 services:
   db:
@@ -29,8 +28,7 @@ services:
   backend:
     build: ./backend
     env_file: .env
-    # Run as the host user so the non-root image can write the bind-mounted
-    # ./storage. Defaults to 1000:1000; override with `UID=$(id -u) GID=$(id -g)`.
+    # Host user, so the non-root image can write ./storage
     user: "${UID:-1000}:${GID:-1000}"
     depends_on:
       db:
@@ -53,7 +51,7 @@ services:
   worker:
     build: ./backend
     env_file: .env
-    user: "${UID:-1000}:${GID:-1000}"  # write reports to bind-mounted ./storage as host user
+    user: "${UID:-1000}:${GID:-1000}"
     depends_on:
       db:
         condition: service_healthy

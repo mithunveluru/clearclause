@@ -1,9 +1,7 @@
-"""Staged pipeline: each stage is its own retry-safe, idempotent Celery task,
-wired into a chain across queues.
+"""Staged pipeline: one retry-safe, idempotent Celery task per stage, chained across queues.
 
-Idempotency: every stage's repository writes are replace-by-document, so a retry
-or reprocess reproduces the same state. Status + an OTel span are written per stage;
-on failure the document is marked failed and the chain stops.
+Repository writes are replace-by-document, so a retry or reprocess reproduces the
+same state. A stage failure marks the document failed and stops the chain.
 """
 import asyncio
 import logging
@@ -40,9 +38,7 @@ from app.services.segmentation_service import SegmentationService
 from app.telemetry import get_tracer
 from app.worker.celery_app import celery_app
 
-# Retry transient failures, but never a timeout: a document that blew the soft limit
-# will blow it again, and autoretry turned one doomed 9-minute task into three —
-# 27 minutes of worker time, during which everyone else's documents queue behind it.
+# Never retry a timeout; it starves the queue
 _RETRY = dict(
     bind=True,
     autoretry_for=(Exception,),
@@ -148,8 +144,7 @@ def score_task(self, document_id: int) -> None:
 async def _run_soft_stage(
     document_id: int, span: str, work: Callable[[AsyncSession], Awaitable[None]]
 ) -> None:
-    """For optional AI stages: never fail the document — log and move on so a
-    down Ollama/Qdrant leaves the (already report_ready) document intact."""
+    """Optional AI stages: log and move on, leaving the report_ready document intact."""
     engine, Session = _session()
     start = time.perf_counter()
     try:
@@ -217,10 +212,9 @@ def build_chain(document_id: int, user_id: int):
         score_task.si(document_id),
         report_task.si(document_id, user_id),
     ]
-    # RAG indexing only in full AI mode (needed for Q&A).
+    # Q&A needs the index
     if settings.AI_MODE == "full":
         steps += [chunk_task.si(document_id), embed_task.si(document_id)]
-    # AI summary in summary_only + full.
     if settings.AI_MODE in ("summary_only", "full"):
         steps += [ai_summary_task.si(document_id)]
     return chain(*steps)

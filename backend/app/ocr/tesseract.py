@@ -12,27 +12,21 @@ from app.ocr.base import OCRProvider
 
 logger = logging.getLogger(__name__)
 
-# Rotations we are willing to try, in order of likelihood for a scanned page.
+# Ordered by likelihood on a scanned page
 _ANGLES = (0, 90, 270, 180)
 
-# Whether a page reads as English, not whether Tesseract enjoyed reading it. Word
-# count and confidence are not enough on their own: upside-down text comes back as a
-# full page of confident nonsense ("pojjeoueassejun"), which both of those signals
-# happily call legible. Function words are the tell — real prose is full of them and
-# misread glyphs almost never produce them.
+# Upside-down text is confident nonsense; function words tell
 _FUNCTION_WORDS = frozenset(
     "the of and to in a is for on or by with be as at from any all this that are not "
     "if may shall will per under within its it no".split()
 )
 _LEGIBLE_FUNCTION_WORDS = 4
 
-# ponytail: function-word count, no dictionary or language model. It separates real
-# text from OCR noise well enough for English contracts, which is all this product
-# reads. Swap for a language detector if it ever handles another script.
+# ponytail: English-only; swap for a language detector if needed
 
 
 class _Read:
-    """What one OCR pass at one rotation got us."""
+    """One OCR pass at one rotation."""
 
     __slots__ = ("blocks", "words", "confidence", "function_words")
 
@@ -48,14 +42,10 @@ class _Read:
 
 
 class TesseractOCRProvider(OCRProvider):
-    """CPU-only OCR via Tesseract. PDFs are rasterized page-by-page first.
+    """CPU-only OCR via Tesseract, rasterizing PDFs page by page.
 
-    Sideways and upside-down scans are handled by trying rotations and keeping the
-    one Tesseract actually reads best, rather than asking Tesseract's orientation
-    detector (OSD) which way is up. OSD is unreliable on document scans: it reported
-    "rotate 180" with confidence 2.4 on pages that were already upright, and acting
-    on that turned readable contracts into garbage. Reading the page is the only
-    honest test of whether it can be read.
+    Rotation is chosen by reading the page, not by Tesseract's OSD — OSD reported
+    "rotate 180" at confidence 2.4 on upright pages and corrupted them.
     """
 
     def __init__(self, dpi: int = 200):
@@ -64,8 +54,7 @@ class TesseractOCRProvider(OCRProvider):
     def extract_page(self, file_path: str, page_number: int, hint: int = 0) -> list[dict]:
         """OCR a single PDF page.
 
-        One page at a time: an unbounded convert_from_path() holds every page in
-        memory simultaneously (~26MB/page at 200dpi) and OOMs the worker.
+        One page at a time: converting all pages at once OOMs the worker (~26MB/page).
         """
         blocks: list[dict] = []
         for image in convert_from_path(
@@ -77,12 +66,11 @@ class TesseractOCRProvider(OCRProvider):
 
     def extract(self, file_path: str) -> list[dict]:
         blocks: list[dict] = []
-        # Pages of one scan share an orientation, so the angle that worked last time
-        # is tried first. Only the first page of a rotated document pays for the search.
+        # Pages share an orientation; only the first searches
         hint = 0
 
         if file_path.lower().endswith(".pdf"):
-            # MAX_PDF_PAGES is enforced at upload; re-applied here as a backstop.
+            # Backstop; also enforced at upload
             pages = min(pdfinfo_from_path(file_path)["Pages"], settings.MAX_PDF_PAGES)
             for page_number in range(1, pages + 1):
                 for image in convert_from_path(
@@ -104,10 +92,7 @@ class TesseractOCRProvider(OCRProvider):
         if base.legible:
             return base.blocks, hint
 
-        # It did not read as English. Usually that means the page is turned, but it is
-        # also what a poor scan looks like — so the page as we found it keeps the
-        # benefit of the doubt, and a rotation has to read *more* like English than it
-        # did to take over. Confident nonsense from a wrong angle cannot clear that.
+        # A rotation must out-read the page as found
         best_angle, best = hint, base
         for angle in (a for a in _ANGLES if a != hint):
             read = self._read(image, page_number, angle)
@@ -119,16 +104,14 @@ class TesseractOCRProvider(OCRProvider):
         if best_angle != hint:
             logger.info("page %d read %d degrees rotated", page_number, best_angle)
         if not best.blocks:
-            # Nothing at any rotation is a bad scan, not an empty page. Say so —
-            # otherwise it silently contributes no clauses and the document reads clean.
+            # Bad scan, not an empty page
             logger.warning("page %d produced no usable text", page_number)
         return best.blocks, best_angle
 
     def _read(self, image: Image.Image, page_number: int, angle: int) -> _Read:
         rotated = image.rotate(angle, expand=True, fillcolor="white") if angle else image
         try:
-            # Tell Tesseract the real resolution. Left to guess it warns "invalid
-            # resolution, assuming 70" and its confidences become meaningless.
+            # Without the real dpi, confidences are meaningless
             data = pytesseract.image_to_data(
                 rotated, output_type=Output.DICT, config=f"--dpi {self.dpi}"
             )
@@ -146,11 +129,7 @@ class TesseractOCRProvider(OCRProvider):
             word = data["text"][i].strip()
             if not word:
                 continue
-            # Deliberately NOT dropping low-confidence words. Tesseract scores plainly
-            # legible words at 0 when it mis-segments them ("Aprocessing"), so a floor
-            # deletes real contract text — and a deleted penalty clause reads as a
-            # clean contract, which is the worst failure this product can have.
-            # Confidence is recorded instead, and a bad scan is surfaced to the user.
+            # Never filter by confidence: real words score 0
             confidences.append(float(data["conf"][i]))
             key = data["block_num"][i]
             x, y = data["left"][i], data["top"][i]
@@ -176,7 +155,7 @@ class TesseractOCRProvider(OCRProvider):
                 "block_order": order,
                 "text": " ".join(g["words"]),
                 "bbox": [g["x0"], g["y0"], g["x1"] - g["x0"], g["y1"] - g["y0"]],
-                "confidence": confidence,  # page mean; how much to trust this text
+                "confidence": confidence,  # page mean
             }
             for order, g in enumerate(groups.values())
         ]

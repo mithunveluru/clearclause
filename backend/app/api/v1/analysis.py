@@ -281,8 +281,7 @@ async def get_report(
         )
 
     store = get_storage()
-    # Ownership is checked above; the signed URL is short-lived and unguessable, so
-    # object storage can serve the bytes directly instead of streaming them through us.
+    # Ownership checked above; the URL is short-lived
     url = store.signed_url(report.pdf_path)
     if url:
         return RedirectResponse(url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)

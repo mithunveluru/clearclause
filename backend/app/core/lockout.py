@@ -1,12 +1,7 @@
 """Per-account login lockout.
 
-The rate limiter keys on client IP, which does nothing against credential
-stuffing spread across many IPs at one account. This counts failures against the
-account itself.
-
-Fails open, like the rate limiter: a Redis outage must not lock everyone out of
-their own accounts. The tradeoff is that brute-force protection is absent while
-Redis is down, so it logs at error level.
+The IP-keyed rate limiter cannot see credential stuffing spread across many IPs.
+Fails open: a Redis outage must not lock everyone out of their own accounts.
 """
 import logging
 

@@ -2,7 +2,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# OCR system deps; shared by backend + worker images
+# OCR system deps, shared by backend and worker
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
     poppler-utils \
@@ -13,8 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Drop root: run as an unprivileged user (least privilege, CIS Docker 4.1).
-# Pre-create the storage dir the app writes to so os.makedirs works non-root.
+# Drop root; pre-create the storage dir for non-root writes
 RUN useradd -m -u 1000 appuser \
     && mkdir -p /storage \
     && chown -R appuser:appuser /storage /app

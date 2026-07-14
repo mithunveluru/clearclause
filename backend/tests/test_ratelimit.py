@@ -37,8 +37,7 @@ async def test_limit_is_enforced():
 
 
 async def test_fails_open_when_redis_is_down(monkeypatch):
-    # A Redis outage used to 500 every login, upload and Q&A. Availability wins;
-    # the tradeoff (no brute-force protection meanwhile) is logged at error level.
+    # A Redis outage must not 500 every request
     async def boom(*_a, **_kw):
         raise RedisConnectionError("redis is down")
 

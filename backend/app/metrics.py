@@ -1,5 +1,4 @@
-"""V2/V3 platform metrics. Instruments are created lazily on a meter that is a
-no-op until telemetry is configured, so every call here is safe with AI/OTel off."""
+"""Platform metrics. Lazy instruments on a no-op meter, so calls are safe with OTel off."""
 from app.telemetry import get_meter
 
 _inst: dict = {}
@@ -8,7 +7,7 @@ _inst: dict = {}
 def _instruments() -> dict:
     if not _inst:
         m = get_meter("clearclause.platform")
-        # names omit the unit/_total suffix; the Prometheus exporter appends it
+        # The Prometheus exporter appends the unit/_total suffix
         _inst["stage"] = m.create_histogram(
             "clearclause_stage_duration", unit="s", description="Pipeline stage duration",
         )
@@ -22,8 +21,7 @@ def _instruments() -> dict:
             "clearclause_ai_request_duration", unit="s",
             description="AI/embedding/retrieval latency, by kind",
         )
-        # The two ways this system goes quietly wrong rather than loudly down. Both
-        # were log lines only, and nobody greps logs at 3am.
+        # How this goes quietly wrong, not loudly down
         _inst["degraded"] = m.create_counter(
             "clearclause_degraded_events",
             description="Silent-degradation events, by kind "

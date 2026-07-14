@@ -26,7 +26,7 @@ def test_local_rejects_keys_that_escape_the_root(tmp_path):
 
 
 def test_local_honours_legacy_absolute_paths(tmp_path):
-    # Rows written before the switch to keys hold an absolute path. They must keep working.
+    # Legacy rows hold an absolute path, not a key
     legacy = tmp_path / "legacy.pdf"
     legacy.write_bytes(b"old")
     assert LocalStorage(root=str(tmp_path)).get(str(legacy)) == b"old"
@@ -72,7 +72,7 @@ def test_s3_signs_report_urls_with_a_short_expiry(monkeypatch):
 
 
 def test_local_backend_cannot_sign_urls(tmp_path):
-    # The report endpoint falls back to streaming the file when this is None.
+    # None makes the endpoint stream the file instead
     assert LocalStorage(root=str(tmp_path)).signed_url("reports/x.pdf") is None
 
 

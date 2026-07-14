@@ -17,8 +17,7 @@ from app.core.config import settings
 from app.ocr.base import OCRProvider
 from app.ocr.tesseract import TesseractOCRProvider
 
-# Below this many characters a page is treated as having no usable text layer.
-# Scanned pages often still carry a stray header or watermark string.
+# Scanned pages still carry stray headers and watermarks
 _MIN_CHARS_FOR_TEXT_LAYER = 40
 
 
@@ -29,13 +28,10 @@ def _paragraphs(lines: list[dict]) -> list[list[dict]]:
     per line would cut sentences at the line break and lose the clause. Paragraph
     blocks mirror what Tesseract's block grouping produces.
 
-    A break is a vertical gap large relative to the page's line height. Comparing
-    against line height rather than against the other gaps matters: two
-    single-line paragraphs produce exactly one gap, and a lone gap can never look
-    like an outlier among its peers.
+    A break is a vertical gap large relative to line height — not relative to the
+    other gaps, since a lone gap can never look like an outlier among its peers.
 
-    ponytail: gap heuristic, fine for prose contracts. A layout-aware parser is
-    the upgrade if multi-column documents start mattering.
+    ponytail: gap heuristic; a layout-aware parser is the upgrade for multi-column.
     """
     if len(lines) <= 1:
         return [lines] if lines else []
@@ -71,10 +67,9 @@ def _blocks_from_page(page, page_number: int) -> list[dict]:
                 "page_number": page_number,
                 "block_order": order,
                 "text": text,
-                # PDF points, not the rendered pixels the OCR path reports. Only ever
-                # stored, never rendered, so the two units never meet.
+                # PDF points, not pixels; stored, never rendered
                 "bbox": [x0, top, x1 - x0, bottom - top],
-                # Read straight from the file — there is no OCR step here to misread it.
+                # Read from the file, not OCR'd
                 "confidence": 100.0,
             }
         )

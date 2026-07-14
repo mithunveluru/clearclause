@@ -35,7 +35,7 @@ class AnalysisService:
                 await OCRService(ExtractedBlockRepository(self.db)).process(doc)
             await self.docs.update_status(document_id, DocStatus.OCR_DONE)
 
-            # Deterministic classification after OCR; informs which analyzer runs next.
+            # Selects the analyzer that runs next
             with self.tracer.start_as_current_span("classification"):
                 await ClassificationService(
                     ExtractedBlockRepository(self.db),

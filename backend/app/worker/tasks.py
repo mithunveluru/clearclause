@@ -16,8 +16,7 @@ from app.worker.celery_app import celery_app
 def _sweep_local_orphans(keep: set[str], store: storage.Storage) -> int:
     """Delete unreferenced files the local backend left behind.
 
-    ponytail: local only. On S3 every object is deleted with its row, and listing a
-    whole bucket to find strays is a job for a lifecycle rule, not a Celery beat.
+    ponytail: local only; on S3 this is a lifecycle rule's job.
     """
     if not isinstance(store, storage.LocalStorage):
         return 0
@@ -44,8 +43,7 @@ async def _cleanup() -> dict:
     Session = async_sessionmaker(engine, expire_on_commit=False)
     try:
         async with Session() as db:
-            # Filter in SQL. Loading every document to find the stale ones grew the
-            # job's memory with the whole table.
+            # Filter in SQL; the whole table grew memory
             stale = (
                 await db.execute(select(Document).where(Document.created_at < cutoff))
             ).scalars().all()
@@ -55,7 +53,7 @@ async def _cleanup() -> dict:
                 await db.delete(d)  # cascades to clauses/findings/scores/reports rows
             await db.commit()
 
-            # The sweep needs every referenced key, but only the keys — not the rows.
+            # Keys only, not rows
             keep = set((await db.execute(select(Document.file_path))).scalars().all())
             keep |= {
                 p for p in (await db.execute(select(Report.pdf_path))).scalars().all() if p

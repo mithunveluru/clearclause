@@ -68,8 +68,7 @@ ROUTES = [
 
 @pytest_asyncio.fixture(autouse=True)
 async def _clear_rate_limits():
-    # The limiter is keyed by client IP; every test here shares one. Without this,
-    # repeated runs exhaust the register/login windows and the suite goes flaky.
+    # Tests share one IP; without this, flaky
     if await _reachable():
         keys = [k async for k in redis_client.scan_iter("rl:*")]
         if keys:

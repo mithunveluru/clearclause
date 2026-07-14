@@ -31,7 +31,7 @@ install_redaction()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Production is enforced in Settings (covers the worker too); warn in dev.
+    # Production is enforced in Settings; warn in dev
     if settings.JWT_SECRET == DEFAULT_JWT_SECRET:
         logger.warning(
             "⚠  JWT_SECRET is using the insecure default — set a strong random value before deploying"
@@ -84,7 +84,7 @@ async def me(user: User = Depends(get_current_user)):
     return user
 
 
-# Metrics not exposed publicly; guarded by METRICS_TOKEN on /internal/metrics.
+# Not public; guarded by METRICS_TOKEN on /internal/metrics
 _instrumentator = Instrumentator().instrument(app)
 
 if settings.METRICS_TOKEN:
@@ -100,7 +100,7 @@ if settings.METRICS_TOKEN:
         return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
-# OTel auto-instrumentation (no-op unless OTEL endpoint is configured).
+# No-op unless an OTEL endpoint is configured
 instrument_fastapi(app)
 instrument_engine(engine)
 instrument_celery()

@@ -14,9 +14,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://clearclause:clearclause@db:5432/clearclause"
     REDIS_URL: str = "redis://redis:6379/0"
     JWT_SECRET: str = DEFAULT_JWT_SECRET
-    # Object storage. local = a directory (dev/tests); s3 = S3/R2/Spaces, encrypted
-    # at rest, reports served by signed URL. Anything holding real user documents
-    # should be on s3 — a container-local volume is unencrypted and unbacked.
+    # Real documents belong on s3; local is unencrypted
     STORAGE_BACKEND: str = "local"   # local | s3
     STORAGE_DIR: str = "/storage"    # local backend root
     S3_BUCKET: str = ""
@@ -35,11 +33,10 @@ class Settings(BaseSettings):
     TRUSTED_PROXY_DEPTH: int = 0      # 1 for nginx/Traefik, 0 for direct
     METRICS_TOKEN: str = ""           # non-empty enables /internal/metrics with token auth
 
-    # routing thresholds: auto proceeds, confirm surfaces alternatives, manual needs a pick
+    # auto proceeds, confirm surfaces alternatives, manual needs a pick
     CLASSIFICATION_AUTO_THRESHOLD: float = 0.90
     CLASSIFICATION_CONFIRM_THRESHOLD: float = 0.70
 
-    # AI / RAG (V3) — all optional. AI_MODE=off keeps V1/V2 fully working.
     AI_MODE: str = "off"  # off | summary_only | full
     AI_MODEL: str = "llama-3.3-70b-versatile"
     GROQ_API_KEY: str = ""
@@ -50,8 +47,7 @@ class Settings(BaseSettings):
     def _enforce_production_invariants(self) -> "Settings":
         """Refuse to start a misconfigured production deployment.
 
-        Lives here, not in the API's lifespan, so it also covers the worker and
-        alembic — neither of which runs the app's startup hooks.
+        In settings, not the API lifespan, so it covers the worker and alembic too.
         """
         if self.ENV != "production":
             return self

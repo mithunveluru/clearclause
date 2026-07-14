@@ -111,7 +111,7 @@ async function req(path: string, opts: RequestInit = {}, _retried = false): Prom
     headers: opts.headers as HeadersInit | undefined,
   });
 
-  // Retry once after silent refresh; skip auth endpoints to avoid loops
+  // Retry once after refresh; skip auth to avoid loops
   if (res.status === 401 && !_retried && !path.includes("/api/v1/auth/")) {
     if (!_refreshing) _refreshing = _tryRefresh().finally(() => { _refreshing = null; });
     const ok = await _refreshing;

@@ -207,7 +207,7 @@ frontend/
 infra/               Observability stack (OTel Collector, Prometheus, Loki, Tempo, Grafana)
 deploy/Caddyfile     Production reverse proxy / TLS
 sample-data/         10 sample documents used by the seed script and E2E tests
-docs/                DEMO, DEPLOY, plans
+docs/                Demo walkthrough and deployment guide
 ```
 
 ---

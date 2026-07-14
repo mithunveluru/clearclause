@@ -36,6 +36,6 @@ def test_summarizer_passes_exactly_the_grounded_prompt():
 
     out = AISummarizer(FakeClient()).summarize(CTX)
     assert out == "A grounded summary."
-    # the model receives only the grounded prompt + the grounding system prompt
+    # Only the grounded prompt reaches the model
     assert seen["system"] == GROUNDING_SYSTEM
     assert seen["prompt"] == build_summary_prompt(CTX)

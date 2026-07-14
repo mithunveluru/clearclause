@@ -42,7 +42,7 @@ _RAW: list[tuple[str, str, str, float, str, str]] = [
      "Ask for advance-notice guarantees and a cap on how much fees/rates can rise."),
 ]
 
-# Potential impact ("what it could cost you") — first-class, shared by API + PDF.
+# Shared by API and PDF
 IMPACT = {
     "processing_fee": "You receive less than the headline loan amount, raising your effective borrowing cost.",
     "service_fee": "The real price is higher than advertised once these add-on charges are included.",
@@ -66,7 +66,7 @@ RULES = [
     for (t, p, s, c, e, a) in _RAW
 ]
 
-# doc-level: the finding is the ABSENCE of a total-cost disclosure, checked once
+# Doc-level: the finding is the absence of a disclosure
 DISCLOSURE_RE = re.compile(
     r"\b(apr|annual\s+percentage\s+rate|total\s+(amount|cost)\s+payable"
     r"|total\s+repayment|effective\s+(annual\s+)?interest\s+rate)\b",

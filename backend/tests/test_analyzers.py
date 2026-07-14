@@ -35,9 +35,7 @@ def test_consumer_analyzer_preserves_detection_parity():
 def test_loan_entities_extracted():
     ents = LoanEntityExtractor().extract(" ".join(c.text for c in LOAN_CLAUSES))
     by_type = {e.entity_type: e.entity_value for e in ents}
-    # The unit travels with the number. "Processing Fee: 2" left the reader guessing
-    # whether that was 2 percent or 2 rupees — on a document about money, an
-    # unlabelled figure is not a fact.
+    # The unit travels with the number
     assert by_type.get("processing_fee") == "2%"
     assert by_type.get("late_fee") == "₹500"
     assert by_type.get("foreclosure_charge") == "4%"

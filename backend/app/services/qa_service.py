@@ -28,14 +28,8 @@ def _terms(text: str) -> set[str]:
 def best_snippet(chunk_text: str, question: str, answer: str = "") -> str:
     """Return the sentence in this chunk that actually supports the answer.
 
-    A chunk holds a whole section, so `chunk_text[:160]` returned its opening words
-    regardless of what was asked — a question about the prepayment penalty was
-    "evidenced" by the processing-fee clause sitting at the top of the chunk. The
-    citation is the product's proof of work; showing text that does not support the
-    claim is worse than showing none.
-
-    Scored against the question *and* the answer: the answer carries the specific
-    terms ("4 percent", "foreclosed") that the question does not.
+    A chunk holds a whole section, so its opening words cite the wrong clause.
+    Scored against the answer too: it carries terms the question does not.
     """
     sentences = [s.strip() for s in _SENTENCE.split(chunk_text) if s.strip()]
     if not sentences:
@@ -44,7 +38,7 @@ def best_snippet(chunk_text: str, question: str, answer: str = "") -> str:
     wanted = _terms(question) | _terms(answer)
     best = max(sentences, key=lambda s: len(_terms(s) & wanted))
     if not _terms(best) & wanted:
-        return chunk_text[:_SNIPPET_CHARS]  # nothing matched; the opening is as good as any
+        return chunk_text[:_SNIPPET_CHARS]  # nothing matched
     return best[:_SNIPPET_CHARS]
 
 
@@ -151,7 +145,7 @@ class QAService:
                 build_follow_up_prompt(question, answer, doc_type),
                 "Generate follow-up questions only. No preamble.",
             )
-            # Parse numbered list: "1. ...\n2. ...\n3. ..."
+            # Numbered list: "1. ...\n2. ..."
             lines = [
                 re.sub(r"^\d+[\.\)]\s*", "", line).strip()
                 for line in raw.splitlines()

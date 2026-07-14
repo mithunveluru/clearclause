@@ -6,7 +6,7 @@ from app.core.config import settings
 
 ALLOWED_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg"}
 
-# sniff magic bytes, not the extension — never trust the client at the upload boundary
+# Sniff magic bytes; never trust the client's extension
 _MAGIC = (
     (b"%PDF", "pdf"),
     (b"\x89PNG\r\n\x1a\n", "image"),
@@ -31,8 +31,7 @@ def detect_source_type(content: bytes) -> str:
 def validate_pdf_pages(path: str) -> int:
     """Reject PDFs with more pages than we will OCR.
 
-    The byte-size cap does not bound page count — a small compressed PDF can hold
-    thousands of pages, and OCR rasterizes each one. Without this the worker OOMs.
+    The byte-size cap does not bound page count, and OCR rasterizes every page.
     """
     try:
         pages = pdfinfo_from_path(path)["Pages"]

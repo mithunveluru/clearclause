@@ -68,7 +68,7 @@ async def test_logout_revokes_the_refresh_token():
         assert (await client.post("/api/v1/auth/refresh")).status_code == 200
         assert (await client.post("/api/v1/auth/logout")).status_code == 200
 
-        # An attacker replaying the token captured before logout must be refused.
+        # A token captured before logout must be refused
         client.cookies.set("cc_refresh", stolen, path="/api/v1/auth")
         r = await client.post("/api/v1/auth/refresh")
         assert r.status_code == 401, "logout did not actually end the session"
@@ -91,7 +91,7 @@ async def test_refresh_rotates_and_the_old_token_cannot_be_replayed():
 
 
 async def test_logout_is_reachable_by_the_refresh_cookie():
-    # The cookie is path-scoped; if it does not reach /logout, revocation is dead code.
+    # Path-scoped: if it misses /logout, revocation is dead code
     if not await _reachable():
         pytest.skip("database/redis not reachable")
 
@@ -105,8 +105,7 @@ async def test_duplicate_registration_is_rejected():
         pytest.skip("database/redis not reachable")
 
     async with _login() as client:
-        # _login already registered this address; registering it again must not
-        # silently succeed — that produced "Invalid email or password" on signup.
+        # A duplicate registration must not silently succeed
         r = await client.post("/api/v1/auth/register", json={"email": _last_email, "password": "x" * 12})
         assert r.status_code == 409
         assert "already registered" in r.json()["detail"].lower()
@@ -119,16 +118,12 @@ async def test_account_locks_after_repeated_failures():
     async with _login() as client:
         email = _last_email
         for _ in range(lockout.MAX_FAILURES):
-            # A real attacker spreads attempts across many IPs to stay under the
-            # per-IP rate limit — which is the entire reason a per-account lock has
-            # to exist. Clearing the IP window each round reproduces that from one
-            # test client; otherwise the rate limiter answers first and we would be
-            # testing it instead of the lockout.
+            # Clearing the IP window each round simulates many IPs
             await _clear_rate_limit_keys()
             r = await client.post("/api/v1/auth/login", json={"email": email, "password": "wrong"})
             assert r.status_code == 401
 
-        # Locked to the account, not the IP — the correct password is refused too.
+        # Per-account: the correct password is refused too
         await _clear_rate_limit_keys()
         r = await client.post(
             "/api/v1/auth/login", json={"email": email, "password": "correct horse battery"}

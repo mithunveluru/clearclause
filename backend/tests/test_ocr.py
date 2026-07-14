@@ -14,7 +14,7 @@ def test_factory_unknown_provider():
 
 
 def test_blocks_grouped_by_block_num():
-    # Fake Tesseract word data: two words in block 1, one in block 2, one blank.
+    # Two words in block 1, one in block 2
     fake = {
         "block_num": [1, 1, 2, 2],
         "text": ["Processing", "fee", "", "Total"],
@@ -34,7 +34,7 @@ def test_blocks_grouped_by_block_num():
 
 
 def test_page_mean_confidence_is_reported():
-    # Confidence is recorded so a bad scan can be surfaced; it never removes text.
+    # Confidence is recorded, never used to remove text
     fake = {
         "block_num": [1, 1, 1],
         "text": ["Processing", "fee", "|~,"],
@@ -76,8 +76,7 @@ class _StubProvider(OCRProvider):
 
 
 async def test_low_confidence_is_recorded_not_discarded():
-    # A garbled scan must still keep its text — dropping it would render the
-    # document as "no risks found", which is the dangerous failure.
+    # Dropping garbled text would read as "no risks found"
     blocks = [
         {"page_number": 1, "block_order": 0, "text": "penalty of 4 percent", "confidence": 22.0},
     ]
@@ -113,15 +112,13 @@ def _fake_read(text: str, conf: float) -> dict:
     }
 
 
-# Real prose is full of function words; a page read at the wrong angle comes back as
-# confident nonsense that contains none. That is what tells the two apart.
+# Function words tell real prose from confident OCR nonsense
 _ENGLISH = "a processing fee of 2 percent is payable on the loan and is not refundable"
 _NONSENSE = "pojjeoueassejun ayjuow mouarq;ne hmuedoul esingsipuosor iddeyusoiedzo"
 
 
 def test_upright_page_is_not_rotated(monkeypatch):
-    # The common case must cost exactly one OCR pass. The old OSD-based code ran an
-    # extra orientation pass on every page and still got it wrong.
+    # The common case must cost exactly one OCR pass
     from PIL import Image
 
     calls = []
@@ -140,9 +137,7 @@ def test_upright_page_is_not_rotated(monkeypatch):
 
 
 def test_confident_nonsense_does_not_pass_as_upright(monkeypatch):
-    # The whole reason this is not decided on word count and confidence: an upside-down
-    # page returns a *full page* of high-confidence gibberish. Only the rotation that
-    # reads as English may win.
+    # Upside-down pages return high-confidence gibberish
     from PIL import Image
 
     def fake(image, **kwargs):
@@ -158,8 +153,7 @@ def test_confident_nonsense_does_not_pass_as_upright(monkeypatch):
 
 
 def test_bad_scan_keeps_the_page_as_found(monkeypatch):
-    # Nothing reads as English at any angle. That is a poor scan, not a rotated one —
-    # the page must be left as it was rather than arbitrarily turned.
+    # Illegible at every angle is a poor scan
     from PIL import Image
 
     monkeypatch.setattr(
@@ -173,7 +167,7 @@ def test_bad_scan_keeps_the_page_as_found(monkeypatch):
 
 
 def test_rotation_is_reused_across_pages(monkeypatch):
-    # Pages of one scan share an orientation, so only the first page pays to search.
+    # Pages share an orientation; only the first searches
     from PIL import Image
 
     passes = []

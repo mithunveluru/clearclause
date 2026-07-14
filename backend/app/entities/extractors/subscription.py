@@ -1,6 +1,6 @@
 from app.contracts import Entity
 
-# entity_type -> anchor keywords; value is the clause snippet (phrase entities)
+# entity_type -> anchor keywords; value is the clause snippet
 _SPECS = [
     ("renewal_term", ("auto-renew", "automatically renew", "renews", "recurring")),
     ("trial_period", ("free trial", "trial")),

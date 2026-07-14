@@ -34,7 +34,7 @@ class EmbedService:
         if not rows:
             return 0
 
-        # Fetch enrichment metadata (best-effort; empty dicts if unavailable)
+        # Best-effort; empty if unavailable
         doc_type: str | None = None
         severity_by_clause: dict[int, str] = {}
         tags_by_clause: dict[int, list[str]] = {}
@@ -65,7 +65,7 @@ class EmbedService:
 
         points = []
         for r, v in zip(rows, vectors):
-            # Chunks can span multiple clauses; use chunk's own clause_id if available
+            # Chunks can span multiple clauses
             clause_id = getattr(r, "clause_id", None)
             severity = severity_by_clause.get(clause_id) if clause_id else None
             risk_tags = tags_by_clause.get(clause_id, []) if clause_id else []

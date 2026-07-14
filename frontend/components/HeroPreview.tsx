@@ -3,12 +3,7 @@ import { m } from "framer-motion";
 import { FileText, TrendingUp } from "lucide-react";
 import { BAND, SEVERITY } from "@/lib/ui";
 
-/**
- * Self-contained product preview for the landing hero — no screenshots, no
- * external assets (CSP-safe). Speaks the real report's visual language:
- * risk score, severity-dotted findings, and a hidden-cost accent for depth.
- * Entrance is one-time; framer honors prefers-reduced-motion app-wide.
- */
+/** Landing hero preview. No external assets, so it stays CSP-safe. */
 
 const FINDINGS: { sev: keyof typeof SEVERITY; label: string; detail: string }[] = [
   { sev: "high", label: "Foreclosure penalty", detail: "4% charge if you repay the loan early" },

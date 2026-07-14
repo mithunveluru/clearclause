@@ -1,12 +1,8 @@
-# Production stack. Differs from the dev compose in every way that matters:
-# built images instead of bind mounts (the dev compose mounts ./backend over /app,
-# so the image contents are never actually exercised), no --reload, no host ports on
-# the datastores, TLS at the edge, and restart policies.
+# Production: built images, no bind mounts, edge TLS.
 #
 #   docker compose -f docker-compose.prod.yml --env-file .env.production up -d
 #
-# Uploads live in object storage (STORAGE_BACKEND=s3), not on a volume — so the API
-# and worker share no filesystem and the worker can be scaled out.
+# Uploads in object storage: no shared filesystem.
 
 services:
   db:
@@ -79,7 +75,7 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
-    # OCR is CPU-bound; concurrency above core count only adds contention.
+    # OCR is CPU-bound; concurrency above core count adds contention
     command: >-
       celery -A app.worker.celery_app worker
       -Q ocr_queue,analysis_queue,report_queue,ai_queue,celery
@@ -91,7 +87,7 @@ services:
       retries: 3
       start_period: 30s
 
-  # Separate beat: embedded --beat would fire the cleanup job once per worker replica.
+  # Embedded --beat fires cleanup once per replica
   beat:
     build: ./backend
     restart: unless-stopped
@@ -101,8 +97,7 @@ services:
         condition: service_healthy
     command: celery -A app.worker.celery_app beat --loglevel=info
 
-  # Vector store for Q&A retrieval. Only needed when AI_MODE=full; with AI_MODE=off
-  # or summary_only nothing connects to it and the profile can stay down.
+  # Only needed when AI_MODE=full
   qdrant:
     image: qdrant/qdrant:v1.12.4
     profiles: ["ai"]
@@ -110,13 +105,12 @@ services:
     volumes:
       - qdrant-data:/qdrant/storage
     healthcheck:
-      # No curl/wget in the image; Qdrant ships its own healthcheck binary.
+      # No curl/wget in the image
       test: ["CMD", "/qdrant/qdrant", "--version"]
       interval: 30s
       timeout: 5s
       retries: 3
-    # No host port: reachable only on the compose network. Qdrant has no auth by
-    # default, so it must never be exposed.
+    # Qdrant has no auth by default; never expose it
 
   frontend:
     build:
@@ -126,7 +120,7 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-    # `npm run start` from the image — no bind mount, no dev server.
+    # From the image: no bind mount, no dev server.
 
   caddy:
     image: caddy:2-alpine

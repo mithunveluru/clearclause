@@ -53,16 +53,14 @@ def test_qa_grounds_answer_and_cites_sources():
     assert ans.answer
     assert ans.citations and ans.citations[0].page == 2 and ans.citations[0].section == "Deposit"
     assert "only" in ans.confidence_note.lower()
-    # the model saw the QA grounding system prompt and the excerpts (not outside knowledge)
+    # The model saw only the prompt and excerpts
     assert client.seen["system"] == QA_SYSTEM
     assert "two months rent" in client.seen["prompt"]
     assert "Rs 25000" in client.seen["prompt"]
 
 
 def test_citation_snippet_supports_the_claim():
-    # A chunk holds a whole section. Returning its opening characters "evidenced" a
-    # prepayment-penalty answer with the processing-fee clause — the citation is the
-    # product's proof of work, so it has to point at the sentence that backs it up.
+    # A chunk is a whole section; cite precisely
     chunk = (
         "A processing fee of 2.5 percent of the sanctioned amount is payable upon disbursal. "
         "The borrower shall pay a prepayment penalty of 4 percent on any amount foreclosed "

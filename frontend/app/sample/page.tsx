@@ -15,8 +15,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { TopBar } from "@/components/ui/TopBar";
 
-// Static preview of a real analysis, rendered through the same explorer
-// components the product uses — the sample and the product never drift apart.
+// Uses the product's own explorer components; no drift
 const SAMPLE: ExplorerDoc = {
   doc_id: 0,
   doc_type: "personal_loan",
@@ -323,8 +322,7 @@ function SamplePane({
     );
   }
   if (active === "questions" || active === "qa") {
-    // The sample has no live Q&A backend; show the detected questions with a
-    // conversion path instead of the product's "embeddings loading" state.
+    // No live Q&A here; show the detected questions
     return (
       <div>
         <h2 className="mb-1 text-[1.375rem] font-semibold tracking-tight">Questions to Ask</h2>

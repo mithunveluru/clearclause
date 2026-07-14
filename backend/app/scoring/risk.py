@@ -3,7 +3,7 @@
 Tunable knobs (CATEGORY_MAX, SEVERITY_POINTS) live here as constants.
 """
 
-# Spec §7 weighting: category -> max contribution to the 0-100 score.
+# category -> max contribution to the 0-100 score
 CATEGORY_MAX = {
     "fee_opacity": 20,
     "penalty": 15,

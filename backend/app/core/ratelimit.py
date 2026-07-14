@@ -19,7 +19,7 @@ def _real_ip(request: Request) -> str:
     if depth > 0:
         xff = request.headers.get("X-Forwarded-For", "")
         ips = [ip.strip() for ip in xff.split(",") if ip.strip()]
-        # The rightmost entry added by the last trusted proxy is at index -(depth)
+        # Last trusted proxy's entry sits at -(depth)
         if len(ips) >= depth:
             return ips[-depth]
     return request.client.host if request.client else "unknown"
@@ -28,8 +28,7 @@ def _real_ip(request: Request) -> str:
 def rate_limit(limit: int, window: int, scope: str):
     """Fixed-window Redis rate limiter keyed by real client IP.
 
-    ponytail: fixed window (cheap, INCR+EXPIRE). Bursts at window edges are
-    acceptable for an MVP; swap for sliding-window/token bucket if abused.
+    ponytail: window-edge bursts are acceptable; swap for a token bucket if abused.
     """
 
     async def dependency(request: Request) -> None:
@@ -40,9 +39,7 @@ def rate_limit(limit: int, window: int, scope: str):
             if count == 1:
                 await redis_client.expire(key, window)
         except RedisError:
-            # Fail open: a Redis outage must not take down login/upload/Q&A with it.
-            # The tradeoff is that brute-force protection is absent while Redis is
-            # down, so this must page. Counter first, log second — nobody greps logs.
+            # Fails open: no brute-force protection while Redis is down
             count_degraded("rate_limiter_unavailable")
             logger.error("rate limiter unavailable (scope=%s); allowing request", scope)
             return

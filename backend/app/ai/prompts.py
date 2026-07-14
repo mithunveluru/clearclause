@@ -17,7 +17,7 @@ QA_SYSTEM = (
     "Be concise: answer in 2-4 sentences or a short bullet list. No padding or filler."
 )
 
-# Per-family QA prompts; QA_SYSTEM is the fallback for unknown types.
+# QA_SYSTEM is the fallback for unknown types
 _QA_SYSTEM_BY_TYPE: dict[str, str] = {
     "loan": (
         "You are a consumer-finance advisor analysing a loan agreement. "

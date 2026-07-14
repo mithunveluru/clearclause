@@ -1,11 +1,7 @@
 """Rule-based document classifier: weighted keyword signals + filename hints.
 
-Confidence calibration:
-- _MIN_SCORE = 3: prevents single-word commits (e.g. bare "rent").
-- Partial match path (score 1-2): routes to "confirm" instead of UNKNOWN.
-- UNKNOWN only when text is empty/noisy AND no filename hint fires.
-- Filename adds up to +4 to the matching type score (applied before threshold).
-- routing_action: auto (≥0.90) | confirm (≥0.70) | manual (<0.70).
+A score of 1-2 routes to "confirm" rather than UNKNOWN, so a weak signal asks
+rather than guesses. UNKNOWN needs empty text and no filename hint.
 """
 import re
 
@@ -15,7 +11,7 @@ from app.core.constants import FAMILY_OF, ClassifiedType
 
 _MIN_SCORE = 3
 
-# High-weight (≥3) keywords must not appear in more than one type.
+# High-weight (≥3) keywords must be unique to one type
 SIGNALS: dict[str, list[tuple[str, int]]] = {
     # Property
     ClassifiedType.PATTA: [

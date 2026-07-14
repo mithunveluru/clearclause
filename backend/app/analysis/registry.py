@@ -8,7 +8,7 @@ from app.core.constants import ClassifiedType
 from app.entities.extractors.loan import LoanEntityExtractor
 from app.entities.extractors.subscription import SubscriptionEntityExtractor
 
-# classified_type -> analyzer; unregistered types fall back to V1 detection
+# Unregistered types fall back to V1 detection
 _ANALYZERS: dict[str, BaseAnalyzer] = {
     ClassifiedType.LOAN: ConsumerAnalyzer(ClassifiedType.LOAN, LoanEntityExtractor()),
     ClassifiedType.SUBSCRIPTION: ConsumerAnalyzer(
