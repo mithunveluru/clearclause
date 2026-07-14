@@ -89,6 +89,16 @@ export type ExplorerDoc = {
   recommendations: string[];
 };
 
+// Echoed back to prove the request came from our own page, not a cross-site one
+function csrfHeaders(method?: string): Record<string, string> {
+  if (!method || method.toUpperCase() === "GET") return {};
+  const token = document.cookie
+    .split("; ")
+    .find((c) => c.startsWith("cc_csrf="))
+    ?.split("=")[1];
+  return token ? { "X-CSRF-Token": decodeURIComponent(token) } : {};
+}
+
 // Deduplicate concurrent refreshes
 let _refreshing: Promise<boolean> | null = null;
 
@@ -97,6 +107,7 @@ async function _tryRefresh(): Promise<boolean> {
     const res = await fetch(`${BASE}/api/v1/auth/refresh`, {
       method: "POST",
       credentials: "include",
+      headers: csrfHeaders("POST"),
     });
     return res.ok;
   } catch {
@@ -108,7 +119,7 @@ async function req(path: string, opts: RequestInit = {}, _retried = false): Prom
   const res = await fetch(`${BASE}${path}`, {
     ...opts,
     credentials: "include",
-    headers: opts.headers as HeadersInit | undefined,
+    headers: { ...csrfHeaders(opts.method), ...(opts.headers as Record<string, string>) },
   });
 
   // Retry once after refresh; skip auth to avoid loops
@@ -158,7 +169,11 @@ export async function login(email: string, password: string): Promise<void> {
 }
 
 export async function logout(): Promise<void> {
-  await fetch(`${BASE}/api/v1/auth/logout`, { method: "POST", credentials: "include" });
+  await fetch(`${BASE}/api/v1/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+    headers: csrfHeaders("POST"),
+  });
 }
 
 export const listDocuments = async (): Promise<Doc[]> =>

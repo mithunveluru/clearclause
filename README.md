@@ -310,6 +310,12 @@ settings validation, so it covers the API, the worker, and Alembic alike.
 
 See [docs/DEPLOY.md](docs/DEPLOY.md) for the full procedure.
 
+### Hosted (Vercel + Render)
+
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) covers a managed deploy — Next.js on Vercel, the API and
+worker on Render, documents in Cloudflare R2 — including the free tier's real limits (spin-down,
+512 MB shared between the API and the worker, and a Postgres instance that expires after 30 days).
+
 ---
 
 ## Configuration

@@ -1,0 +1,82 @@
+# Render Blueprint. Free tier throughout; see docs/DEPLOYMENT.md for the caveats
+# that come with it (spin-down, 512MB shared with the worker, 30-day Postgres).
+#
+# Secrets are marked sync:false — Render prompts for them, they never live in git.
+
+services:
+  - type: web
+    name: clearclause-api
+    runtime: docker
+    plan: free
+    region: oregon
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerCommand: ./start-render.sh
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: clearclause-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: clearclause-redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ENV
+        value: production
+      - key: COOKIE_SECURE
+        value: "true"
+      # Vercel and Render are different sites, so Lax cookies would never be sent
+      - key: COOKIE_SAMESITE
+        value: none
+      - key: TRUSTED_PROXY_DEPTH
+        value: "1"
+      # Set to your Vercel production domain after the first frontend deploy
+      - key: CORS_ORIGINS
+        sync: false
+      # Vercel preview deploys get a new hostname per commit
+      - key: CORS_ORIGIN_REGEX
+        sync: false
+      # Free instances have no persistent disk: uploads must go to object storage
+      - key: STORAGE_BACKEND
+        value: s3
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_ENDPOINT_URL
+        sync: false
+      - key: S3_REGION
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      # OCR rasterizes ~26MB/page; 512MB is shared with the worker and the API
+      - key: MAX_UPLOAD_MB
+        value: "5"
+      - key: MAX_PDF_PAGES
+        value: "10"
+      - key: AI_MODE
+        value: "off"
+      - key: GROQ_API_KEY
+        sync: false
+      - key: JINA_API_KEY
+        sync: false
+      - key: QDRANT_URL
+        sync: false
+
+  - type: redis
+    name: clearclause-redis
+    plan: free
+    region: oregon
+    maxmemoryPolicy: noeviction  # a dropped Celery message is a document that never analyzes
+    ipAllowList: []              # internal only
+
+databases:
+  - name: clearclause-db
+    plan: free
+    region: oregon
+    databaseName: clearclause
+    user: clearclause

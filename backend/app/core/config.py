@@ -27,9 +27,12 @@ class Settings(BaseSettings):
     MAX_PDF_PAGES: int = 50   # a 10MB PDF can hold thousands of pages; OCR memory scales with them
     FILE_RETENTION_DAYS: int = 7
     CORS_ORIGINS: str = "http://localhost:3000"  # comma-separated
+    CORS_ORIGIN_REGEX: str = ""       # Vercel previews get a new hostname per commit
 
     ENV: str = "development"          # set to "production" in prod deployments
     COOKIE_SECURE: bool = False       # set True when serving over HTTPS
+    # none = frontend on a different site than the API (Vercel + Render)
+    COOKIE_SAMESITE: str = "lax"      # lax | none
     TRUSTED_PROXY_DEPTH: int = 0      # 1 for nginx/Traefik, 0 for direct
     METRICS_TOKEN: str = ""           # non-empty enables /internal/metrics with token auth
 
@@ -42,6 +45,17 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str = ""
     JINA_API_KEY: str = ""
     QDRANT_URL: str = "http://qdrant:6333"
+
+    @model_validator(mode="after")
+    def _normalize_database_url(self) -> "Settings":
+        """Managed Postgres (Render, Heroku, …) hands out a driverless URL."""
+        url = self.DATABASE_URL
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql://", 1)
+        if url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        object.__setattr__(self, "DATABASE_URL", url)
+        return self
 
     @model_validator(mode="after")
     def _enforce_production_invariants(self) -> "Settings":
@@ -60,6 +74,18 @@ class Settings(BaseSettings):
             problems.append("CORS_ORIGINS contains a plaintext http:// origin")
         if problems:
             raise ValueError("Refusing to start in production: " + "; ".join(problems))
+        return self
+
+    @model_validator(mode="after")
+    def _enforce_cookie_invariants(self) -> "Settings":
+        """Browsers silently drop a SameSite=None cookie that is not Secure."""
+        problems = []
+        if self.COOKIE_SAMESITE not in ("lax", "none"):
+            problems.append(f"COOKIE_SAMESITE must be lax or none, got {self.COOKIE_SAMESITE!r}")
+        if self.COOKIE_SAMESITE == "none" and not self.COOKIE_SECURE:
+            problems.append("COOKIE_SAMESITE=none requires COOKIE_SECURE=true")
+        if problems:
+            raise ValueError("Refusing to start: " + "; ".join(problems))
         return self
 
     @property

@@ -2,7 +2,7 @@ import jwt
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core import revocation
+from app.core import csrf, revocation
 from app.core.config import settings
 from app.core.ratelimit import rate_limit
 from app.core.security import decode_token
@@ -18,15 +18,22 @@ REFRESH_PATH = "/api/v1/auth"  # refresh token travels only to refresh + logout
 
 
 def _set_auth_cookies(response: Response, tokens: TokenResponse) -> None:
-    """Write access + refresh tokens as httpOnly cookies."""
-    shared = {"httponly": True, "samesite": "lax", "secure": settings.COOKIE_SECURE}
-    response.set_cookie("cc_token", tokens.access_token, max_age=1800, path="/", **shared)
+    """Write access + refresh tokens as httpOnly cookies, plus a readable CSRF token."""
+    shared = {"samesite": settings.COOKIE_SAMESITE, "secure": settings.COOKIE_SECURE}
+    response.set_cookie(
+        "cc_token", tokens.access_token, max_age=1800, path="/", httponly=True, **shared
+    )
     response.set_cookie(
         "cc_refresh",
         tokens.refresh_token,
         max_age=7 * 24 * 3600,
         path=REFRESH_PATH,
+        httponly=True,
         **shared,
+    )
+    # Deliberately readable: the frontend echoes it back in a header
+    response.set_cookie(
+        csrf.COOKIE, csrf.new_token(), max_age=7 * 24 * 3600, path="/", httponly=False, **shared
     )
 
 
@@ -109,4 +116,5 @@ async def logout(response: Response, cc_refresh: str | None = Cookie(default=Non
             pass  # already invalid, or Redis is down — still clear the cookies below
     response.delete_cookie("cc_token", path="/")
     response.delete_cookie("cc_refresh", path=REFRESH_PATH)
+    response.delete_cookie(csrf.COOKIE, path="/")
     return {"ok": True}
