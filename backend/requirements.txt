@@ -49,5 +49,5 @@ prometheus-fastapi-instrumentator==7.0.0
 
 # Tests (Phase 13)
 pytest==8.3.4
-pytest-asyncio==0.25.0
+pytest-asyncio==1.4.0
 httpx==0.28.1
