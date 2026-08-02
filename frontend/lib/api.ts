@@ -191,8 +191,17 @@ export async function uploadDocument(file: File): Promise<Doc> {
 export const deleteDocument = (id: number) =>
   req(`/api/v1/documents/${id}`, { method: "DELETE" });
 
+// A plain URL, not a fetch: the browser opens it as a top-level navigation and sends the
+// auth cookie itself. `#page=N` is the PDF viewer's own deep-link fragment.
+export const documentFileUrl = (id: number, page?: number | null) =>
+  `${BASE}/api/v1/documents/${id}/file${page != null ? `#page=${page}` : ""}`;
+
 export const analyzeDocument = async (id: number): Promise<{ status: string }> =>
   (await req(`/api/v1/documents/${id}/analyze`, { method: "POST" })).json();
+
+// Resets status to "uploaded" and re-runs the chain, so the caller's poll picks it up again
+export const reprocessDocument = async (id: number): Promise<{ status: string }> =>
+  (await req(`/api/v1/documents/${id}/reprocess`, { method: "POST" })).json();
 
 export const fetchReportBlob = async (id: number): Promise<Blob> =>
   (await req(`/api/v1/documents/${id}/report`)).blob();

@@ -1,7 +1,7 @@
 "use client";
 import {
   AlertTriangle, BookOpen, Calendar, CheckCircle, Compass, DollarSign, Eye,
-  HelpCircle, Map, MessageSquare, RotateCcw, Shield,
+  HelpCircle, Map, MessageSquare, RotateCcw, Search, Shield,
 } from "lucide-react";
 import { bandMeta, severityMeta } from "@/lib/ui";
 import type { ExplorerDoc, ExplorerSection } from "@/lib/api";
@@ -33,6 +33,8 @@ export function ExplorerNav({
   mode,
   onMode,
   onWalkthrough,
+  query,
+  onQuery,
 }: {
   explorer: ExplorerDoc;
   active: string;
@@ -40,12 +42,32 @@ export function ExplorerNav({
   mode: ReadingMode;
   onMode: (m: ReadingMode) => void;
   onWalkthrough: () => void;
+  /** Omitted by the sample explorer, which has no search. */
+  query?: string;
+  onQuery?: (q: string) => void;
 }) {
   const band = explorer.risk_band;
   const bm = band ? bandMeta(band) : null;
 
   return (
     <nav className="flex flex-col gap-1 py-6">
+      {onQuery && (
+        <div className="relative mb-5">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3"
+            strokeWidth={1.75}
+            aria-hidden
+          />
+          <input
+            type="search"
+            value={query ?? ""}
+            onChange={(e) => onQuery(e.target.value)}
+            placeholder="Search this document"
+            aria-label="Search this document"
+            className="field h-10 pl-9 text-[0.875rem]"
+          />
+        </div>
+      )}
       {bm && band && (
         <div
           className="mb-5 rounded-2xl px-4 py-3.5"

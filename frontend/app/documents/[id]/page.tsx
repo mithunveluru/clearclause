@@ -1,10 +1,11 @@
 "use client";
 import { AnimatePresence, m } from "framer-motion";
-import { AlertTriangle, ArrowLeft, CheckCircle, Compass, Lock } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle, Compass, FileText, Lock, Search } from "lucide-react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
+  documentFileUrl,
   getAiSummary,
   getDocument,
   getExplorer,
@@ -22,8 +23,11 @@ import { FinancialView } from "@/components/explorer/FinancialView";
 import { GuidedWalkthrough } from "@/components/explorer/GuidedWalkthrough";
 import { OverviewView } from "@/components/explorer/OverviewView";
 import { QuestionsView } from "@/components/explorer/QuestionsView";
+import { SearchView } from "@/components/explorer/SearchView";
 import { SectionView } from "@/components/explorer/SectionView";
 import { TimelineView } from "@/components/explorer/TimelineView";
+import { viewTransition, easeSmooth } from "@/components/ui/motion";
+import { searchExplorer } from "@/lib/search";
 import { Container, Surface } from "@/components/ui/Surface";
 import { TopBar } from "@/components/ui/TopBar";
 
@@ -43,9 +47,22 @@ export default function DocumentDetail() {
   const [doc, setDoc] = useState<Doc | null>(null);
   const [explorer, setExplorer] = useState<ExplorerDoc | null>(null);
   const [aiSummary, setAiSummary] = useState<AISummary | null>(null);
-  const [active, setActive] = useState("overview");
   const [mode, setMode] = useState<ReadingMode>("consumer");
   const [walkthrough, setWalkthrough] = useState(false);
+  // Transient, unlike the open section: a search is not a place you navigate back to
+  const [query, setQuery] = useState("");
+
+  // The open section lives in the URL so Back steps between sections instead of leaving the
+  // document, a refresh keeps your place, and a section can be linked to.
+  const params = useSearchParams();
+  const active = params.get("section") || "overview";
+  const setActive = useCallback(
+    (id: string) => {
+      const qs = id === "overview" ? "" : `?section=${encodeURIComponent(id)}`;
+      router.push(`/documents/${docId}${qs}`, { scroll: false });
+    },
+    [router, docId]
+  );
 
   const loadExplorer = useCallback(async () => {
     const e = await getExplorer(docId);
@@ -123,9 +140,19 @@ export default function DocumentDetail() {
           </div>
           <h1 className="t-headline mt-2.5 break-words">{doc.original_filename}</h1>
           <Surface className="mt-10 max-w-xl px-8 py-9">
-            <h2 className="t-section mb-1">Analyzing your document</h2>
-            <p className="t-caption mb-7">This usually takes a few seconds. You don&apos;t need to do anything.</p>
-            <AnalysisProgress status={doc.status} />
+            <h2 className="t-section mb-1">
+              {doc.status === "failed" ? "Analysis stopped" : "Analyzing your document"}
+            </h2>
+            <p className="t-caption mb-7">
+              {doc.status === "failed"
+                ? "Nothing was saved from this run."
+                : "This usually takes a few seconds. You don’t need to do anything."}
+            </p>
+            <AnalysisProgress
+              docId={docId}
+              status={doc.status}
+              onRetried={() => setDoc((d) => (d ? { ...d, status: "uploaded" } : d))}
+            />
             <p className="mt-8 flex items-center gap-1.5 text-[0.75rem] text-ink-3">
               <Lock className="h-3 w-3" strokeWidth={2} />
               Processed privately · only the extracted text is analyzed
@@ -138,7 +165,7 @@ export default function DocumentDetail() {
         <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.4, ease: easeSmooth }}
           className="flex min-h-[calc(100vh-64px)]"
         >
           <aside className="hidden w-64 shrink-0 border-r border-line bg-surface lg:block xl:w-72">
@@ -150,6 +177,8 @@ export default function DocumentDetail() {
                 mode={mode}
                 onMode={setMode}
                 onWalkthrough={() => setWalkthrough(true)}
+                query={query}
+                onQuery={setQuery}
               />
             </div>
           </aside>
@@ -158,14 +187,26 @@ export default function DocumentDetail() {
             <div className="sticky top-16 z-20 border-b border-line bg-surface/95 backdrop-blur-md">
               <div className="px-6 py-3.5 flex items-center justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="truncate font-semibold text-[0.9375rem] leading-snug">
+                  {/* The document's own title. Without it the loaded explorer had no h1 and
+                      every view opened at h2, so heading navigation started mid-hierarchy. */}
+                  <h1 className="truncate font-semibold text-[0.9375rem] leading-snug">
                     {doc.original_filename}
-                  </p>
+                  </h1>
                   {doc.classified_type && (
                     <DocTypeBadge type={doc.classified_type} />
                   )}
                 </div>
-                <div className="shrink-0">
+                <div className="flex shrink-0 items-center gap-2">
+                  <a
+                    href={documentFileUrl(docId)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex h-10 items-center gap-2 rounded-[10px] px-3 text-[0.875rem] font-medium text-ink-2 transition hover:bg-brand/[0.06] hover:text-brand focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/25"
+                  >
+                    <FileText className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                    Original
+                    <span className="sr-only"> document (opens in a new tab)</span>
+                  </a>
                   <DownloadReportButton docId={docId} />
                 </div>
               </div>
@@ -177,6 +218,8 @@ export default function DocumentDetail() {
                 mode={mode}
                 onMode={setMode}
                 onWalkthrough={() => setWalkthrough(true)}
+                query={query}
+                onQuery={setQuery}
               />
             </div>
 
@@ -184,14 +227,14 @@ export default function DocumentDetail() {
               {isLowConfidenceScan(doc) && (
                 <div
                   role="status"
-                  className="mb-8 flex items-start gap-3 rounded-xl border border-[#f59e0b]/30 bg-[#fffbeb] px-4 py-3"
+                  className="mb-8 flex items-start gap-3 rounded-xl border border-risk-moderate/30 bg-risk-moderate-tint px-4 py-3"
                 >
                   <AlertTriangle
-                    className="mt-0.5 h-4 w-4 shrink-0 text-[#b45309]"
+                    className="mt-0.5 h-4 w-4 shrink-0 text-risk-moderate"
                     strokeWidth={2}
                     aria-hidden
                   />
-                  <p className="text-[0.9375rem] leading-relaxed text-[#78350f]">
+                  <p className="text-[0.9375rem] leading-relaxed text-ink">
                     <span className="font-medium">This scan was hard to read.</span>{" "}
                     Some text may have been missed, so this review could be incomplete —
                     a clearer scan or the original PDF will give a more reliable result.
@@ -200,16 +243,28 @@ export default function DocumentDetail() {
               )}
 
               <AnimatePresence mode="wait">
-                <ContentPane
-                  key={active}
-                  active={active}
-                  explorer={explorer}
-                  mode={mode}
-                  docId={docId}
-                  qaReady={!!doc.qa_ready}
-                  aiSummary={active === "overview" ? aiSummary : null}
-                  onSection={setActive}
-                />
+                {query.trim() ? (
+                  <SearchView
+                    key="search"
+                    query={query.trim()}
+                    hits={searchExplorer(explorer, query)}
+                    onSelect={(sectionId) => {
+                      setQuery("");
+                      setActive(sectionId);
+                    }}
+                  />
+                ) : (
+                  <ContentPane
+                    key={active}
+                    active={active}
+                    explorer={explorer}
+                    mode={mode}
+                    docId={docId}
+                    qaReady={!!doc.qa_ready}
+                    aiSummary={active === "overview" ? aiSummary : null}
+                    onSection={setActive}
+                  />
+                )}
               </AnimatePresence>
             </div>
           </main>
@@ -273,12 +328,12 @@ function ContentPane({
   }
   if (active === "strengths") {
     return (
-      <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+      <m.div {...viewTransition}>
         <h2 className="mb-4 text-[1.375rem] font-semibold tracking-tight">In your favour</h2>
         <ul className="space-y-3">
           {explorer.strengths.map((s, i) => (
-            <li key={i} className="flex items-start gap-3 rounded-xl border border-[#15803d]/20 bg-[#f0fdf4] px-4 py-3 text-[0.9375rem] leading-relaxed">
-              <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#15803d]" strokeWidth={2} />
+            <li key={i} className="flex items-start gap-3 rounded-xl border border-risk-low/20 bg-risk-low-tint px-4 py-3 text-[0.9375rem] leading-relaxed">
+              <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-risk-low" strokeWidth={2} />
               {s}
             </li>
           ))}
@@ -288,7 +343,7 @@ function ContentPane({
   }
 
   const section = explorer.sections.find((s) => s.id === active);
-  if (section) return <SectionView section={section} mode={mode} />;
+  if (section) return <SectionView section={section} mode={mode} docId={docId} />;
 
   return <OverviewView explorer={explorer} onSection={onSection} />;
 }
@@ -302,6 +357,8 @@ function MobileNav({
   mode,
   onMode,
   onWalkthrough,
+  query,
+  onQuery,
 }: {
   explorer: ExplorerDoc;
   active: string;
@@ -309,6 +366,8 @@ function MobileNav({
   mode: ReadingMode;
   onMode: (m: ReadingMode) => void;
   onWalkthrough: () => void;
+  query: string;
+  onQuery: (q: string) => void;
 }) {
   const items = [
     { id: "overview",  label: "Overview" },
@@ -320,7 +379,23 @@ function MobileNav({
   ];
 
   return (
-    <div className="lg:hidden flex items-center gap-2 px-4 pb-2.5">
+    <div className="lg:hidden px-4 pb-2.5">
+      <div className="relative mb-2">
+        <Search
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3"
+          strokeWidth={1.75}
+          aria-hidden
+        />
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => onQuery(e.target.value)}
+          placeholder="Search this document"
+          aria-label="Search this document"
+          className="field h-10 pl-9 text-[0.875rem]"
+        />
+      </div>
+      <div className="flex items-center gap-2">
       <nav
         aria-label="Document sections"
         className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto scrollbar-none"
@@ -360,6 +435,7 @@ function MobileNav({
           <Compass className="h-4 w-4" strokeWidth={1.75} />
         </button>
       )}
+      </div>
     </div>
   );
 }
