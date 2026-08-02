@@ -1,4 +1,7 @@
+import mimetypes
+
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
@@ -58,6 +61,36 @@ async def get_document(
     svc: DocumentService = Depends(_service),
 ):
     return await svc.get(doc_id, user.id)
+
+
+@router.get("/{doc_id}/file")
+async def get_file(
+    doc_id: int,
+    user: User = Depends(get_current_user),
+    svc: DocumentService = Depends(_service),
+):
+    """Serve the uploaded document itself, so a finding can cite evidence the user can see.
+
+    Inline, because the point is to open it at the cited page (`#page=N`) rather than
+    download it. Safe to render: uploads are magic-byte checked (`files.detect_source_type`)
+    and every response carries `X-Content-Type-Options: nosniff`, so a file claiming to be a
+    PDF cannot be served as HTML.
+    """
+    doc = await svc.get(doc_id, user.id)
+
+    # Ownership checked above; the URL is short-lived
+    url = svc.store.signed_url(doc.file_path)
+    if url:
+        return RedirectResponse(url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+
+    media_type = mimetypes.guess_type(doc.file_path)[0] or "application/octet-stream"
+    with svc.store.local_path(doc.file_path) as path:
+        return FileResponse(
+            path,
+            media_type=media_type,
+            filename=doc.original_filename,
+            content_disposition_type="inline",
+        )
 
 
 @router.delete("/{doc_id}", status_code=status.HTTP_204_NO_CONTENT)
