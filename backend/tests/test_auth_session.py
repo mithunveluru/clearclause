@@ -135,3 +135,32 @@ async def test_account_locks_after_repeated_failures():
             "/api/v1/auth/login", json={"email": email, "password": "correct horse battery"}
         )
         assert r.status_code == 200, "clearing the lock should let the real user back in"
+
+
+async def test_login_authenticates_by_cookie_alone():
+    """The contract scripts/seed.py depends on.
+
+    Login returns no token in its body, and no Authorization header is accepted —
+    the seed script silently broke when auth moved to cookies because it read
+    login.json()["access_token"].
+    """
+    if not await _reachable():
+        pytest.skip("database/redis not reachable")
+
+    async with _login() as client:
+        body = (await client.post(
+            "/api/v1/auth/login",
+            json={"email": _last_email, "password": "correct horse battery"},
+        )).json()
+        assert "access_token" not in body, "callers must not read a token from the body"
+
+        assert (await client.get("/api/v1/documents")).status_code == 200
+
+        bare = AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
+        try:
+            r = await bare.get(
+                "/api/v1/documents", headers={"Authorization": "Bearer anything"}
+            )
+            assert r.status_code == 401, "bearer tokens must not authenticate"
+        finally:
+            await bare.aclose()

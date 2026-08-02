@@ -30,11 +30,15 @@ def render_png(text: str) -> io.BytesIO:
 
 
 def main() -> None:
+    # Auth rides on httpOnly cookies, which the client jar keeps
     client = httpx.Client(base_url=API, timeout=60)
     client.post("/api/v1/auth/register", json={"email": EMAIL, "password": PASSWORD})
     login = client.post("/api/v1/auth/login", json={"email": EMAIL, "password": PASSWORD})
     login.raise_for_status()
-    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    # Only enforced when cookies are SameSite=None
+    csrf = client.cookies.get("cc_csrf")
+    headers = {"X-CSRF-Token": csrf} if csrf else {}
 
     names = sorted(n for n in os.listdir(SAMPLES) if n.endswith(".txt"))
     for name in names:
