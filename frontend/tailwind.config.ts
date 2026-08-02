@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import { BRAND, RISK } from "./lib/ui";
 
 export default {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./lib/**/*.{ts,tsx}"],
@@ -18,18 +19,19 @@ export default {
           strong: "#dde4f0",
         },
         brand: {
-          DEFAULT: "#4f46e5",
+          DEFAULT: BRAND,
           accent: "#6366f1",
           deep: "#312e81",
           soft: "#eef2ff",
         },
-        accent: "#4f46e5",
-        // Darkened to clear 4.5:1 as text on their tints
+        accent: BRAND,
+        // Generated from lib/ui.ts RISK — the single source, with the contrast notes.
+        // `text-risk-high` and `bg-risk-high-tint` are the same values severityMeta() returns.
         risk: {
-          low: "#15803d",
-          moderate: "#b45309",
-          high: "#b91c1c",
-          critical: "#991b1b",
+          low: { DEFAULT: RISK.low.color, tint: RISK.low.tint },
+          moderate: { DEFAULT: RISK.medium.color, tint: RISK.medium.tint },
+          high: { DEFAULT: RISK.high.color, tint: RISK.high.tint },
+          critical: { DEFAULT: RISK.critical.color, tint: RISK.critical.tint },
         },
       },
       fontFamily: {

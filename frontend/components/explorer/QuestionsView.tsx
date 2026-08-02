@@ -1,16 +1,20 @@
 "use client";
 import { AnimatePresence, m } from "framer-motion";
+import { viewTransition } from "@/components/ui/motion";
 import { HelpCircle, MessageSquare, Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { askQuestion, type Citation, type SuggestedQuestion } from "@/lib/api";
+import { BRAND, NEUTRAL, RISK } from "@/lib/ui";
 
 type Msg = { role: "user" | "assistant"; content: string; citations?: Citation[] };
 
+// Cancellation was a one-off violet (#7c3aed) belonging to no palette; it now uses the
+// brand indigo, keeping the product to one accent plus the risk scale.
 const CATEGORY_COLORS: Record<string, string> = {
-  cost: "#b45309",
-  penalty: "#b91c1c",
-  cancellation: "#7c3aed",
-  rights: "#15803d",
+  cost: RISK.medium.color,
+  penalty: RISK.high.color,
+  cancellation: BRAND,
+  rights: RISK.low.color,
 };
 
 function citationLabel(c: Citation) {
@@ -88,11 +92,7 @@ export function QuestionsView({
   }
 
   return (
-    <m.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-    >
+    <m.div {...viewTransition}>
       <h2 className="mb-1 text-[1.375rem] font-semibold tracking-tight">Questions to Ask</h2>
       <p className="mb-6 t-body text-ink-2">
         Ask these before signing. Every answer is grounded in the document with citations.
@@ -102,7 +102,7 @@ export function QuestionsView({
         <div className="mb-8 space-y-2">
           <p className="t-caption mb-3 uppercase">Detected from this document</p>
           {questions.map((q, i) => {
-            const color = CATEGORY_COLORS[q.category] ?? "#6b7280";
+            const color = CATEGORY_COLORS[q.category] ?? NEUTRAL;
             return (
               <m.button
                 key={i}

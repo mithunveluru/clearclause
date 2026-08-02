@@ -1,7 +1,10 @@
+import { RISK } from "@/lib/ui";
+
 const META: Record<string, { label: string; color: string; tint: string }> = {
-  report_ready: { label: "Reviewed",  color: "#15803d", tint: "#f0fdf4" },
-  failed:       { label: "Failed",    color: "#b91c1c", tint: "#fef2f2" },
-  _default:     { label: "Analyzing", color: "#b45309", tint: "#fff7ed" },
+  // Spread first: RISK carries its own `label` ("Low"/"High"/…) which must not win here
+  report_ready: { ...RISK.low, label: "Reviewed" },
+  failed:       { ...RISK.high, label: "Failed" },
+  _default:     { ...RISK.medium, label: "Analyzing" },
 };
 
 export function StatusBadge({ status }: { status: string }) {

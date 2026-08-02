@@ -8,7 +8,7 @@ import { deleteDocument, listDocuments, logout, type Doc } from "@/lib/api";
 import { DocTypeBadge } from "@/components/DocTypeBadge";
 import UploadDropzone from "@/components/UploadDropzone";
 import { Button } from "@/components/ui/Button";
-import { staggerContainer, staggerItem } from "@/components/ui/motion";
+import { staggerContainer, staggerItem, easeSmooth } from "@/components/ui/motion";
 import { DocRowSkeleton } from "@/components/ui/Skeleton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Container, Surface } from "@/components/ui/Surface";
@@ -73,7 +73,7 @@ export default function Dashboard() {
           <m.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.55, ease: easeSmooth }}
           >
             <p className="eyebrow">Workspace</p>
             <h1 className="t-headline mt-2">Review a document</h1>

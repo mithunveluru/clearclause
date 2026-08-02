@@ -1,17 +1,18 @@
 "use client";
 import { m } from "framer-motion";
+import { easeSmooth } from "@/components/ui/motion";
 import { FileText, TrendingUp } from "lucide-react";
-import { BAND, SEVERITY } from "@/lib/ui";
+import { bandMeta, RISK } from "@/lib/ui";
 
 /** Landing hero preview. No external assets, so it stays CSP-safe. */
 
-const FINDINGS: { sev: keyof typeof SEVERITY; label: string; detail: string }[] = [
+const FINDINGS: { sev: keyof typeof RISK; label: string; detail: string }[] = [
   { sev: "high", label: "Foreclosure penalty", detail: "4% charge if you repay the loan early" },
   { sev: "medium", label: "Hidden processing fee", detail: "₹4,720 not shown in the headline rate" },
   { sev: "medium", label: "Bundled insurance", detail: "Credit-life premium added to principal" },
 ];
 
-const band = BAND.High;
+const band = bandMeta("High");
 
 const reveal = {
   initial: { opacity: 0, y: 22, scale: 0.98 },
@@ -19,7 +20,7 @@ const reveal = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.35 },
+    transition: { duration: 0.7, ease: easeSmooth, delay: 0.35 },
   },
 };
 
@@ -66,7 +67,7 @@ export function HeroPreview() {
                   style={{ backgroundColor: band.color }}
                   initial={{ width: 0 }}
                   animate={{ width: "71%" }}
-                  transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.9 }}
+                  transition={{ duration: 0.9, ease: easeSmooth, delay: 0.9 }}
                 />
               </div>
             </div>
@@ -74,7 +75,7 @@ export function HeroPreview() {
             {/* findings */}
             <ul className="space-y-3.5">
               {FINDINGS.map((f) => {
-                const meta = SEVERITY[f.sev];
+                const meta = RISK[f.sev];
                 return (
                   <li key={f.label} className="flex gap-3">
                     <span
@@ -95,7 +96,7 @@ export function HeroPreview() {
         {/* floating hidden-cost accent — the product's core insight, given depth */}
         <m.div
           initial={{ opacity: 0, y: 14, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.95 } }}
+          animate={{ opacity: 1, y: 0, scale: 1, transition: { duration: 0.6, ease: easeSmooth, delay: 0.95 } }}
           className="absolute -right-3 -top-6 flex items-center gap-2.5 rounded-2xl border border-line bg-surface/95 px-4 py-3 shadow-raised backdrop-blur-sm sm:-right-8"
         >
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-risk-high/[0.08] text-risk-high">

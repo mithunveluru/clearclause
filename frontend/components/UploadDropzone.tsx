@@ -1,5 +1,6 @@
 "use client";
 import { AnimatePresence, m } from "framer-motion";
+import { easeSmooth } from "@/components/ui/motion";
 import { FileUp } from "lucide-react";
 import { useRef, useState } from "react";
 import { uploadDocument, type Doc } from "@/lib/api";
@@ -33,7 +34,7 @@ export default function UploadDropzone({ onUploaded }: { onUploaded: (doc: Doc) 
         onDragLeave={() => setDrag(false)}
         onDrop={(e) => { e.preventDefault(); setDrag(false); handle(e.dataTransfer.files[0]); }}
         animate={{ scale: drag ? 1.014 : busy ? 1.004 : 1 }}
-        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.28, ease: easeSmooth }}
         className={`group relative cursor-pointer overflow-hidden rounded-3xl border px-8 py-16 text-center transition-colors duration-200 ${
           busy
             ? "cursor-wait border-brand/30 bg-brand/[0.025]"
@@ -48,7 +49,7 @@ export default function UploadDropzone({ onUploaded }: { onUploaded: (doc: Doc) 
 
         {busy && (
           <div className="absolute inset-x-0 bottom-0 h-[2px] overflow-hidden rounded-b-3xl">
-            <div className="h-full w-full animate-shimmer bg-[linear-gradient(90deg,transparent_0%,#4f46e5_50%,transparent_100%)] bg-[length:200%_100%]" />
+            <div className="h-full w-full animate-shimmer bg-[linear-gradient(90deg,transparent_0%,theme(colors.brand.DEFAULT)_50%,transparent_100%)] bg-[length:200%_100%]" />
           </div>
         )}
 
@@ -68,7 +69,7 @@ export default function UploadDropzone({ onUploaded }: { onUploaded: (doc: Doc) 
                 initial={{ opacity: 0, scale: 0.7 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.7 }}
-                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: 0.25, ease: easeSmooth }}
                 className="flex h-5 w-5 items-center justify-center"
               >
                 <span className="h-5 w-5 animate-pulse rounded-full border-2 border-brand/70" />
@@ -79,7 +80,7 @@ export default function UploadDropzone({ onUploaded }: { onUploaded: (doc: Doc) 
                 initial={{ opacity: 0, scale: 0.7 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.7 }}
-                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: 0.25, ease: easeSmooth }}
               >
                 <FileUp className="h-6 w-6" strokeWidth={1.75} />
               </m.span>
@@ -93,7 +94,7 @@ export default function UploadDropzone({ onUploaded }: { onUploaded: (doc: Doc) 
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.3, ease: easeSmooth }}
           >
             <p className="mt-5 text-[1.0625rem] font-medium tracking-tight text-ink">
               {busy

@@ -1,5 +1,6 @@
 "use client";
 import { m } from "framer-motion";
+import { viewTransition } from "@/components/ui/motion";
 import { AlertTriangle, CheckCircle, DollarSign, TrendingUp } from "lucide-react";
 import type { ExplorerDoc } from "@/lib/api";
 import { bandMeta, docTypeLabel, severityMeta } from "@/lib/ui";
@@ -19,12 +20,7 @@ export function OverviewView({
   );
 
   return (
-    <m.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.35 }}
-      className="space-y-6"
-    >
+    <m.div {...viewTransition} className="space-y-6">
       {bm && (
         <div
           className="flex items-center gap-4 rounded-2xl p-6"
@@ -76,7 +72,7 @@ export function OverviewView({
       {highestSections.length > 0 && (
         <div>
           <p className="mb-3 flex items-center gap-1.5 t-caption">
-            <AlertTriangle className="h-3.5 w-3.5 text-[#b91c1c]" />
+            <AlertTriangle className="h-3.5 w-3.5 text-risk-high" />
             Attention required
           </p>
           <div className="space-y-2">
@@ -116,13 +112,13 @@ export function OverviewView({
       {explorer.strengths.length > 0 && (
         <div>
           <p className="mb-3 flex items-center gap-1.5 t-caption">
-            <CheckCircle className="h-3.5 w-3.5 text-[#15803d]" />
+            <CheckCircle className="h-3.5 w-3.5 text-risk-low" />
             What&apos;s in your favour
           </p>
           <ul className="space-y-2">
             {explorer.strengths.map((s, i) => (
               <li key={i} className="flex items-start gap-2.5 text-[0.9375rem] leading-relaxed">
-                <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#15803d]" strokeWidth={2} />
+                <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-risk-low" strokeWidth={2} />
                 {s}
               </li>
             ))}

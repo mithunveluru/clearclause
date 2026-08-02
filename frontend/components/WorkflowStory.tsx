@@ -3,14 +3,15 @@ import { animate, m, useInView, useReducedMotion } from "framer-motion";
 import { ArrowRight, Check, FileUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { easeSmooth } from "@/components/ui/motion";
+import { RISK } from "@/lib/ui";
 
 /** Scroll-driven walkthrough of the real pipeline stages. */
 
 const STAGES = ["Reading pages", "Extracting clauses", "Checking risks"];
 
 const FINDINGS = [
-  { color: "#b91c1c", label: "Foreclosure penalty" },
-  { color: "#b45309", label: "Hidden processing fee" },
+  { color: RISK.high.color, label: "Foreclosure penalty" },
+  { color: RISK.medium.color, label: "Hidden processing fee" },
 ];
 
 const panel = {
@@ -133,7 +134,7 @@ export function WorkflowStory() {
       >
         <div className="w-full rounded-xl border border-line bg-canvas px-4 py-4">
           <div className="flex items-baseline gap-1">
-            <CountUpScore value={71} color="#b91c1c" />
+            <CountUpScore value={71} color={RISK.high.color} />
             <span className="text-[0.8125rem] font-medium text-ink-3">/100 · High risk</span>
           </div>
           <ul className="mt-3 space-y-1.5">
