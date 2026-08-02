@@ -74,12 +74,15 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.18, duration: 0.55, ease: easeSmooth }}
               >
-                <ButtonLink href="/dashboard" variant="primary" size="lg">
-                  Analyze a document
+                {/* The sample leads. The primary CTA used to point at /dashboard, which
+                    bounces a logged-out visitor to /login — the most prominent action on the
+                    page produced a signup form before showing a single thing the product does. */}
+                <ButtonLink href="/sample" variant="primary" size="lg">
+                  See a real analysis
                   <ArrowRight className="h-[18px] w-[18px]" strokeWidth={2} />
                 </ButtonLink>
-                <ButtonLink href="/sample" variant="secondary" size="lg">
-                  View a sample report
+                <ButtonLink href="/dashboard" variant="secondary" size="lg">
+                  Analyze your document
                 </ButtonLink>
               </m.div>
               <m.p

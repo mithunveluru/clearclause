@@ -9,9 +9,11 @@ import { ExplorerNav } from "@/components/explorer/ExplorerNav";
 import { FinancialView } from "@/components/explorer/FinancialView";
 import { GuidedWalkthrough } from "@/components/explorer/GuidedWalkthrough";
 import { OverviewView } from "@/components/explorer/OverviewView";
+import { SearchView } from "@/components/explorer/SearchView";
 import { SectionView } from "@/components/explorer/SectionView";
 import { TimelineView } from "@/components/explorer/TimelineView";
 import { ButtonLink } from "@/components/ui/Button";
+import { searchExplorer } from "@/lib/search";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { TopBar } from "@/components/ui/TopBar";
 
@@ -202,6 +204,7 @@ export default function SamplePage() {
   const [active, setActive] = useState("overview");
   const [mode, setMode] = useState<ReadingMode>("consumer");
   const [walkthrough, setWalkthrough] = useState(false);
+  const [query, setQuery] = useState("");
 
   return (
     <>
@@ -227,6 +230,8 @@ export default function SamplePage() {
                 mode={mode}
                 onMode={setMode}
                 onWalkthrough={() => setWalkthrough(true)}
+                query={query}
+                onQuery={setQuery}
               />
             </div>
           </aside>
@@ -235,9 +240,10 @@ export default function SamplePage() {
             <div className="sticky top-16 z-20 border-b border-line bg-surface/95 backdrop-blur-md">
               <div className="flex items-center justify-between gap-4 px-6 py-3.5">
                 <div className="min-w-0">
-                  <p className="truncate text-[0.9375rem] font-semibold leading-snug">
+                  {/* Same fix as the real explorer: without an h1 the views started at h2 */}
+                  <h1 className="truncate text-[0.9375rem] font-semibold leading-snug">
                     Personal Loan Agreement.pdf
-                  </p>
+                  </h1>
                   <p className="t-caption">Sample report · static preview of a real analysis</p>
                 </div>
                 <ButtonLink href="/register" variant="primary" className="shrink-0">
@@ -270,7 +276,21 @@ export default function SamplePage() {
             </div>
 
             <div className="mx-auto max-w-3xl px-6 py-10">
-              <SamplePane active={active} mode={mode} onSection={setActive} />
+              <AnimatePresence mode="wait">
+                {query.trim() ? (
+                  <SearchView
+                    key="search"
+                    query={query.trim()}
+                    hits={searchExplorer(SAMPLE, query)}
+                    onSelect={(sectionId) => {
+                      setQuery("");
+                      setActive(sectionId);
+                    }}
+                  />
+                ) : (
+                  <SamplePane key={active} active={active} mode={mode} onSection={setActive} />
+                )}
+              </AnimatePresence>
             </div>
           </main>
         </div>
@@ -311,9 +331,9 @@ function SamplePane({
           {SAMPLE.strengths.map((s, i) => (
             <li
               key={i}
-              className="flex items-start gap-3 rounded-xl border border-[#15803d]/20 bg-[#f0fdf4] px-4 py-3 text-[0.9375rem] leading-relaxed"
+              className="flex items-start gap-3 rounded-xl border border-risk-low/20 bg-risk-low-tint px-4 py-3 text-[0.9375rem] leading-relaxed"
             >
-              <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#15803d]" strokeWidth={2} />
+              <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-risk-low" strokeWidth={2} />
               {s}
             </li>
           ))}
