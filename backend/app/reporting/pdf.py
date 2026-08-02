@@ -4,6 +4,7 @@ Layout: cover, executive summary, risk overview, key findings, clause analysis,
 cost impact, recommended actions, appendix — with running header/footer + page
 numbers. Built from the report summary dict produced by build_summary().
 """
+import re
 from datetime import datetime
 
 from reportlab.lib import colors
@@ -20,6 +21,7 @@ from reportlab.platypus import (
     Table,
     TableStyle,
 )
+from reportlab.platypus.tableofcontents import TableOfContents
 
 INK = colors.HexColor("#191919")
 INK2 = colors.HexColor("#5f5f63")
@@ -53,6 +55,43 @@ def _label(issue_type: str) -> str:
     return issue_type.replace("_", " ").title()
 
 
+def _cost_value(key: str, v) -> str:
+    """Only two of these fields have a unit we actually know.
+
+    `scoring/cost.py` detects whether a fee was written as a currency amount or a
+    percentage, then stores the bare number and discards which it was — so processing,
+    late, renewal and foreclosure charges are printed exactly as extracted rather than
+    labelled with a unit that might be wrong. `headline_rate` is percent by construction
+    (its regex requires a % sign), and `estimated_true_cost` sums rupee amounts only.
+    """
+    if v is None:
+        return "—"
+    if key == "headline_rate":
+        return f"{v:g}% p.a."
+    if key == "estimated_true_cost":
+        return f"Rs. {v:,.0f}"  # Helvetica has no glyph for the rupee sign
+    return f"{v:,g}"
+
+
+class _Doc(SimpleDocTemplate):
+    """SimpleDocTemplate that feeds its section headings to the table of contents.
+
+    Page numbers are only known once the story has been laid out, so the build runs
+    twice (`multiBuild`); the bookmark makes each TOC line a working internal link.
+    """
+
+    def afterFlowable(self, flowable):
+        if not isinstance(flowable, Paragraph) or flowable.style.name != "h1":
+            return
+        text = flowable.getPlainText()
+        # Derived from the heading, not a counter: the key has to be identical on every
+        # pass or the entries never match and multiBuild gives up after 10 tries.
+        key = "sec-" + re.sub(r"\W+", "-", text.lower()).strip("-")
+        self.canv.bookmarkPage(key)
+        self.canv.addOutlineEntry(text, key.encode(), 0, 0)
+        self.notify("TOCEntry", (0, text, self.page, key))
+
+
 def _hx(color) -> str:
     return "#" + color.hexval()[2:]  # reportlab markup needs a leading '#'
 
@@ -64,14 +103,22 @@ def _styles():
     return {
         "eyebrow": ParagraphStyle("eyebrow", fontName="Helvetica-Bold", fontSize=8.5,
                                   textColor=INK3, leading=12, spaceAfter=4),
+        # keepWithNext: a heading must not be left stranded at the foot of a page
         "h1": ParagraphStyle("h1", fontName="Helvetica-Bold", fontSize=15, textColor=INK,
-                             leading=19, spaceBefore=6, spaceAfter=10),
+                             leading=19, spaceBefore=6, spaceAfter=10, keepWithNext=1),
+        # Same look, different style name: only "h1" paragraphs become contents entries
+        "h1plain": ParagraphStyle("h1plain", fontName="Helvetica-Bold", fontSize=15,
+                                  textColor=INK, leading=19, spaceBefore=6, spaceAfter=10),
         "h2": ParagraphStyle("h2", fontName="Helvetica-Bold", fontSize=11, textColor=INK,
                              leading=15, spaceAfter=3),
         "body": base,
         "small": ParagraphStyle("small", parent=base, fontSize=9, textColor=INK3, leading=13),
         "quote": ParagraphStyle("quote", parent=base, fontName="Helvetica-Oblique",
                                 fontSize=9.5, textColor=INK2, leftIndent=10, leading=14),
+        "ref": ParagraphStyle("ref", parent=base, fontName="Helvetica-Bold", fontSize=8,
+                              textColor=INK3, leftIndent=10, leading=11),
+        "tocH": ParagraphStyle("tocH", fontName="Helvetica", fontSize=10.5, textColor=INK2,
+                               leading=22),
         "coverTitle": ParagraphStyle("ct", fontName="Helvetica-Bold", fontSize=30,
                                      textColor=INK, leading=34, alignment=TA_CENTER),
         "coverSub": ParagraphStyle("cs", fontName="Helvetica", fontSize=12, textColor=INK2,
@@ -111,6 +158,15 @@ def _finding_box(f: dict, st: dict):
                   Paragraph(f'<b>Why it matters.</b> {f["impact"]}', st["body"])]
     if f.get("clause_text"):
         inner += [Spacer(1, 6), Paragraph(f'“{f["clause_text"]}”', st["quote"])]
+        # Where to find it in the original — a quote the reader cannot locate is not evidence
+        where = " · ".join(
+            p for p in (
+                f"Page {f['page_number']}" if f.get("page_number") is not None else None,
+                f.get("section_name"),
+            ) if p
+        )
+        if where:
+            inner += [Spacer(1, 3), Paragraph(where, st["ref"])]
     inner += [Spacer(1, 6),
               Paragraph(f'<b>Recommended action.</b> {f["action_text"]}', st["body"])]
 
@@ -177,6 +233,13 @@ def build_pdf(summary: dict, out_path: str) -> str:
                         "financial advice.", st["small"])]
     story += [PageBreak()]
 
+    # Contents — filled in on the second pass, when page numbers are known
+    toc = TableOfContents()
+    toc.levelStyles = [st["tocH"]]
+    toc.dotsMinLevel = 0
+    # "h1plain" so afterFlowable does not list the contents page in its own contents
+    story += [Paragraph("Contents", st["h1plain"]), Spacer(1, 6), toc, PageBreak()]
+
     # Executive summary
     story += [Paragraph("Executive Summary", st["h1"]),
               Paragraph(score["summary"], st["body"]), Spacer(1, 10)]
@@ -241,7 +304,7 @@ def build_pdf(summary: dict, out_path: str) -> str:
                        ("foreclosure_charge", "Foreclosure charge"),
                        ("estimated_true_cost", "Estimated true cost")]:
         v = cost.get(key)
-        cost_rows.append([label, f"{v:,}" if v is not None else "—"])
+        cost_rows.append([label, _cost_value(key, v)])
     ctab = Table(cost_rows, colWidths=[10 * cm, 6 * cm])
     ctab.setStyle(TableStyle([
         ("FONT", (0, 0), (-1, 0), "Helvetica-Bold", 9), ("TEXTCOLOR", (0, 0), (-1, 0), INK),
@@ -253,8 +316,32 @@ def build_pdf(summary: dict, out_path: str) -> str:
         ("LEFTPADDING", (0, 0), (-1, -1), 10), ("RIGHTPADDING", (0, 0), (-1, -1), 10),
     ]))
     story += [ctab, Spacer(1, 6),
-              Paragraph("Percentages are shown as stated and are not added to the estimated "
-                        "true cost, which sums known currency amounts only.", st["small"])]
+              Paragraph("Fees are reproduced exactly as the agreement states them — a figure "
+                        "may be a rupee amount or a percentage. The estimated true cost sums "
+                        "known rupee amounts only; percentages are excluded because computing "
+                        "them needs a principal this document does not reliably state.",
+                        st["small"])]
+
+    # Key dates and periods
+    if summary.get("key_dates"):
+        story += [Spacer(1, 18), Paragraph("Key Dates and Periods", st["h1"])]
+        date_rows = [["Term", "Stated value", "What it means"]]
+        for d in summary["key_dates"]:
+            date_rows.append([
+                Paragraph(f'<b>{d["label"]}</b>', st["body"]),
+                Paragraph(d["value"], st["body"]),
+                Paragraph(d["description"], st["small"]),
+            ])
+        dtab = Table(date_rows, colWidths=[4.6 * cm, 4.2 * cm, 7.2 * cm])
+        dtab.setStyle(TableStyle([
+            ("FONT", (0, 0), (-1, 0), "Helvetica-Bold", 9), ("TEXTCOLOR", (0, 0), (-1, 0), INK),
+            ("LINEBELOW", (0, 0), (-1, 0), 0.8, LINE),
+            ("LINEBELOW", (0, 1), (-1, -2), 0.4, LINE),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("TOPPADDING", (0, 0), (-1, -1), 7), ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+            ("LEFTPADDING", (0, 0), (-1, -1), 10), ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+        ]))
+        story += [dtab]
 
     # Recommended actions
     story += [Spacer(1, 16), Paragraph("Recommended Actions", st["h1"])]
@@ -275,8 +362,9 @@ def build_pdf(summary: dict, out_path: str) -> str:
               Paragraph("This report is informational and does not constitute legal or financial "
                         "advice. Always read the full agreement before signing.", st["small"])]
 
-    SimpleDocTemplate(
+    # multiBuild, not build: the contents page needs a first pass to learn the page numbers
+    _Doc(
         out_path, pagesize=A4, leftMargin=2 * cm, rightMargin=2 * cm,
         topMargin=2 * cm, bottomMargin=2 * cm, title="ClearClause Consumer Risk Report",
-    ).build(story, onFirstPage=decorate, onLaterPages=decorate)
+    ).multiBuild(story, onFirstPage=decorate, onLaterPages=decorate)
     return out_path
