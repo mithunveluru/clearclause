@@ -83,22 +83,6 @@ implementation of a document-analysis pipeline with an auditable AI layer.
 
 ---
 
-## Screenshots
-
-> Captures belong in `docs/screenshots/`. Placeholders below.
-
-| | |
-|---|---|
-| **Landing page** | ![Landing](docs/screenshots/landing.png) |
-| **Upload** | ![Upload](docs/screenshots/upload.png) |
-| **Document Explorer** | ![Explorer](docs/screenshots/explorer.png) |
-| **AI Q&A** | ![Q&A](docs/screenshots/qa.png) |
-| **PDF report** | ![Report](docs/screenshots/report.png) |
-| **Dashboard** | ![Dashboard](docs/screenshots/dashboard.png) |
-| **Grafana** | ![Grafana](docs/screenshots/grafana.png) |
-
----
-
 ## Architecture
 
 A modular monolith plus a separate Celery worker. Clean module boundaries, no microservice tax.
@@ -236,8 +220,9 @@ docker compose exec backend alembic upgrade head
 docker compose exec backend python scripts/seed.py   # optional: demo user + sample documents
 ```
 
-The seed script creates **demo@example.com / supersecret1** and uploads the documents in
-`sample-data/`.
+The seed script creates a local demo account (`demo@example.com` / `supersecret1`, override
+with `SEED_EMAIL` / `SEED_PASSWORD`) and uploads the documents in `sample-data/`. It is a
+development convenience and has no effect on a deployed instance.
 
 ### Services
 
@@ -308,11 +293,11 @@ With `ENV=production`, the application **refuses to start** unless `JWT_SECRET` 
 from its default, `COOKIE_SECURE=true`, and all CORS origins are `https://`. The check lives in
 settings validation, so it covers the API, the worker, and Alembic alike.
 
-See [docs/DEPLOY.md](docs/DEPLOY.md) for the full procedure.
+See [docs/deploy-vps.md](docs/deploy-vps.md) for the full procedure.
 
 ### Hosted (Vercel + Render)
 
-[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) covers a managed deploy — Next.js on Vercel, the API and
+[docs/deploy-render.md](docs/deploy-render.md) covers a managed deploy — Next.js on Vercel, the API and
 worker on Render, documents in Cloudflare R2 — including the free tier's real limits (spin-down,
 512 MB shared between the API and the worker, and a Postgres instance that expires after 30 days).
 

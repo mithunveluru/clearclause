@@ -9,7 +9,7 @@ documents in Cloudflare R2.
 > you promise this URL to anyone.
 
 For a real deployment, `docker-compose.prod.yml` on a small VPS is both cheaper and
-better — see [DEPLOY.md](DEPLOY.md).
+better — see [deploy-vps.md](deploy-vps.md).
 
 ---
 
