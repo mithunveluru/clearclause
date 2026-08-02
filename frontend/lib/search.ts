@@ -80,8 +80,7 @@ function hit(
   fields: (string | null | undefined)[],
   tokens: string[]
 ): SearchHit | null {
-  // The title is searchable too — it carries the section name and the entity label, which is
-  // how a topic search ("fees", "lock-in") is expected to find anything at all.
+  // Title carries section and entity labels for topic search
   const text = [title, ...fields].filter(Boolean).join(" · ");
   const found = locate(text, tokens);
   if (!found) return null;

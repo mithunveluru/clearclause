@@ -31,7 +31,7 @@ class Settings(BaseSettings):
 
     ENV: str = "development"          # set to "production" in prod deployments
     COOKIE_SECURE: bool = False       # set True when serving over HTTPS
-    # none = frontend on a different site than the API (Vercel + Render)
+    # none when frontend and API are different sites
     COOKIE_SAMESITE: str = "lax"      # lax | none
     TRUSTED_PROXY_DEPTH: int = 0      # 1 for nginx/Traefik, 0 for direct
     METRICS_TOKEN: str = ""           # non-empty enables /internal/metrics with token auth

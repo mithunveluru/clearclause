@@ -18,8 +18,8 @@ COOKIE = "cc_csrf"
 HEADER = "X-CSRF-Token"
 
 _SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
-# Login and register run before a session exists, so there is no token to send yet.
-# They are rate-limited, and forging them grants the attacker nothing.
+# No session exists yet so no token can be sent
+# Both are rate limited and forging them gains nothing
 _EXEMPT_PATHS = frozenset({"/api/v1/auth/login", "/api/v1/auth/register"})
 
 

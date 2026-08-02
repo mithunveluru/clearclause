@@ -8,8 +8,7 @@ import { BRAND, NEUTRAL, RISK } from "@/lib/ui";
 
 type Msg = { role: "user" | "assistant"; content: string; citations?: Citation[] };
 
-// Cancellation was a one-off violet (#7c3aed) belonging to no palette; it now uses the
-// brand indigo, keeping the product to one accent plus the risk scale.
+// Brand indigo, not a one-off violet outside the palette
 const CATEGORY_COLORS: Record<string, string> = {
   cost: RISK.medium.color,
   penalty: RISK.high.color,

@@ -1,7 +1,7 @@
 import { RISK } from "@/lib/ui";
 
 const META: Record<string, { label: string; color: string; tint: string }> = {
-  // Spread first: RISK carries its own `label` ("Low"/"High"/…) which must not win here
+  // Spread first, RISK carries its own label
   report_ready: { ...RISK.low, label: "Reviewed" },
   failed:       { ...RISK.high, label: "Failed" },
   _default:     { ...RISK.medium, label: "Analyzing" },

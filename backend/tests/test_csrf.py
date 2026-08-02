@@ -19,7 +19,7 @@ def test_matching_cookie_and_header_passes():
 
 
 def test_missing_header_is_rejected():
-    # The cross-site attacker's page sends the cookie but cannot read it
+    # Attacker sends the cookie but cannot read it
     with pytest.raises(HTTPException) as e:
         csrf.enforce(_Req(cookies={csrf.COOKIE: csrf.new_token()}))
     assert e.value.status_code == 403
@@ -42,6 +42,6 @@ def test_reads_are_not_guarded():
 
 
 def test_login_and_register_are_exempt():
-    # No session exists yet, so there is no token to echo back
+    # No session yet so no token to echo
     csrf.enforce(_Req(path="/api/v1/auth/login"))
     csrf.enforce(_Req(path="/api/v1/auth/register"))

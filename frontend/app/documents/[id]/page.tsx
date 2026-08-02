@@ -49,11 +49,10 @@ export default function DocumentDetail() {
   const [aiSummary, setAiSummary] = useState<AISummary | null>(null);
   const [mode, setMode] = useState<ReadingMode>("consumer");
   const [walkthrough, setWalkthrough] = useState(false);
-  // Transient, unlike the open section: a search is not a place you navigate back to
+  // Transient, not a navigable location
   const [query, setQuery] = useState("");
 
-  // The open section lives in the URL so Back steps between sections instead of leaving the
-  // document, a refresh keeps your place, and a section can be linked to.
+  // Section in the URL keeps Back refresh and links working
   const params = useSearchParams();
   const active = params.get("section") || "overview";
   const setActive = useCallback(

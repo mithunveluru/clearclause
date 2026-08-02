@@ -89,7 +89,7 @@ export type ExplorerDoc = {
   recommendations: string[];
 };
 
-// Echoed back to prove the request came from our own page, not a cross-site one
+// Echoed back to prove same-site origin
 function csrfHeaders(method?: string): Record<string, string> {
   if (!method || method.toUpperCase() === "GET") return {};
   const token = document.cookie
@@ -191,15 +191,15 @@ export async function uploadDocument(file: File): Promise<Doc> {
 export const deleteDocument = (id: number) =>
   req(`/api/v1/documents/${id}`, { method: "DELETE" });
 
-// A plain URL, not a fetch: the browser opens it as a top-level navigation and sends the
-// auth cookie itself. `#page=N` is the PDF viewer's own deep-link fragment.
+// Top-level navigation sends the auth cookie
+// #page=N is the PDF viewer deep link
 export const documentFileUrl = (id: number, page?: number | null) =>
   `${BASE}/api/v1/documents/${id}/file${page != null ? `#page=${page}` : ""}`;
 
 export const analyzeDocument = async (id: number): Promise<{ status: string }> =>
   (await req(`/api/v1/documents/${id}/analyze`, { method: "POST" })).json();
 
-// Resets status to "uploaded" and re-runs the chain, so the caller's poll picks it up again
+// Resets status so the caller poll resumes
 export const reprocessDocument = async (id: number): Promise<{ status: string }> =>
   (await req(`/api/v1/documents/${id}/reprocess`, { method: "POST" })).json();
 

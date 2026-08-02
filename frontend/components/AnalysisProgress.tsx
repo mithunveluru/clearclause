@@ -20,7 +20,7 @@ const STAGES = [
 
 function stageIndex(status: string): number {
   const i = STAGES.findIndex((s) => s.status === status);
-  // An unrecognised status is still in flight; hold at the first step rather than guess
+  // Unknown status is still in flight, hold at first step
   return i === -1 ? 0 : i;
 }
 

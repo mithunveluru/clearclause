@@ -27,7 +27,7 @@ celery_app.conf.task_routes = {
     "stage.ai_summary": {"queue": "ai_queue"},
 }
 
-# ponytail: embedded beat; separate service if scaled out
+# Embedded beat, split into a service when scaled out
 celery_app.conf.beat_schedule = {
     "cleanup-stale-files": {
         "task": "cleanup_stale_files",

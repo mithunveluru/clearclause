@@ -56,13 +56,11 @@ def _label(issue_type: str) -> str:
 
 
 def _cost_value(key: str, v) -> str:
-    """Only two of these fields have a unit we actually know.
+    """Render a cost field with a unit only where the unit is known.
 
-    `scoring/cost.py` detects whether a fee was written as a currency amount or a
-    percentage, then stores the bare number and discards which it was — so processing,
-    late, renewal and foreclosure charges are printed exactly as extracted rather than
-    labelled with a unit that might be wrong. `headline_rate` is percent by construction
-    (its regex requires a % sign), and `estimated_true_cost` sums rupee amounts only.
+    scoring/cost.py discards whether a fee was currency or percent, so the four
+    ambiguous fields print exactly as extracted. headline_rate is percent by
+    construction and estimated_true_cost sums rupee amounts only.
     """
     if v is None:
         return "—"
@@ -84,8 +82,7 @@ class _Doc(SimpleDocTemplate):
         if not isinstance(flowable, Paragraph) or flowable.style.name != "h1":
             return
         text = flowable.getPlainText()
-        # Derived from the heading, not a counter: the key has to be identical on every
-        # pass or the entries never match and multiBuild gives up after 10 tries.
+        # Key must be stable across multiBuild passes
         key = "sec-" + re.sub(r"\W+", "-", text.lower()).strip("-")
         self.canv.bookmarkPage(key)
         self.canv.addOutlineEntry(text, key.encode(), 0, 0)
@@ -103,10 +100,10 @@ def _styles():
     return {
         "eyebrow": ParagraphStyle("eyebrow", fontName="Helvetica-Bold", fontSize=8.5,
                                   textColor=INK3, leading=12, spaceAfter=4),
-        # keepWithNext: a heading must not be left stranded at the foot of a page
+        # keepWithNext prevents stranded headings
         "h1": ParagraphStyle("h1", fontName="Helvetica-Bold", fontSize=15, textColor=INK,
                              leading=19, spaceBefore=6, spaceAfter=10, keepWithNext=1),
-        # Same look, different style name: only "h1" paragraphs become contents entries
+        # Only h1 becomes a contents entry
         "h1plain": ParagraphStyle("h1plain", fontName="Helvetica-Bold", fontSize=15,
                                   textColor=INK, leading=19, spaceBefore=6, spaceAfter=10),
         "h2": ParagraphStyle("h2", fontName="Helvetica-Bold", fontSize=11, textColor=INK,
@@ -158,7 +155,7 @@ def _finding_box(f: dict, st: dict):
                   Paragraph(f'<b>Why it matters.</b> {f["impact"]}', st["body"])]
     if f.get("clause_text"):
         inner += [Spacer(1, 6), Paragraph(f'“{f["clause_text"]}”', st["quote"])]
-        # Where to find it in the original — a quote the reader cannot locate is not evidence
+        # Locate the quote in the source document
         where = " · ".join(
             p for p in (
                 f"Page {f['page_number']}" if f.get("page_number") is not None else None,
@@ -233,11 +230,11 @@ def build_pdf(summary: dict, out_path: str) -> str:
                         "financial advice.", st["small"])]
     story += [PageBreak()]
 
-    # Contents — filled in on the second pass, when page numbers are known
+    # Filled on the second pass
     toc = TableOfContents()
     toc.levelStyles = [st["tocH"]]
     toc.dotsMinLevel = 0
-    # "h1plain" so afterFlowable does not list the contents page in its own contents
+    # h1plain keeps this out of its own contents
     story += [Paragraph("Contents", st["h1plain"]), Spacer(1, 6), toc, PageBreak()]
 
     # Executive summary
@@ -362,7 +359,7 @@ def build_pdf(summary: dict, out_path: str) -> str:
               Paragraph("This report is informational and does not constitute legal or financial "
                         "advice. Always read the full agreement before signing.", st["small"])]
 
-    # multiBuild, not build: the contents page needs a first pass to learn the page numbers
+    # multiBuild resolves contents page numbers
     _Doc(
         out_path, pagesize=A4, leftMargin=2 * cm, rightMargin=2 * cm,
         topMargin=2 * cm, bottomMargin=2 * cm, title="ClearClause Consumer Risk Report",

@@ -1,7 +1,7 @@
 """Best-effort true-cost extraction from clause text.
 
-ponytail: percentages are stored but never summed — that needs a principal we
-don't reliably have. Upgrade path: resolve principal, then compound.
+Percentages are stored but never summed; that needs a principal the document
+does not reliably state. Resolve the principal first, then compound.
 """
 import re
 

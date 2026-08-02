@@ -22,7 +22,7 @@ _FUNCTION_WORDS = frozenset(
 )
 _LEGIBLE_FUNCTION_WORDS = 4
 
-# ponytail: English-only; swap for a language detector if needed
+# English only, add language detection if needed
 
 
 class _Read:

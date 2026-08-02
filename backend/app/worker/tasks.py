@@ -16,7 +16,7 @@ from app.worker.celery_app import celery_app
 def _sweep_local_orphans(keep: set[str], store: storage.Storage) -> int:
     """Delete unreferenced files the local backend left behind.
 
-    ponytail: local only; on S3 this is a lifecycle rule's job.
+    Local backend only; on S3 a lifecycle rule does this.
     """
     if not isinstance(store, storage.LocalStorage):
         return 0

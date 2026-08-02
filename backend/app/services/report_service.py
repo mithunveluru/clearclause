@@ -27,7 +27,7 @@ class ReportService:
         self.findings = findings
         self.scores = scores
         self.reports = reports
-        # Optional so existing callers keep working; without it the report omits key dates
+        # Optional; without it the report omits key dates
         self.entities = entities
 
     async def process(self, document_id: int, user_id: int) -> dict:
@@ -40,7 +40,7 @@ class ReportService:
 
         clauses = await self.clauses.list_for_document(document_id)
         text_by_id = {c.id: c.normalized_text for c in clauses}
-        # Where each quote came from — a reader cannot check a finding they cannot locate
+        # Source location for each quoted clause
         page_by_id = {c.id: c.page_number for c in clauses}
         section_by_id = {c.id: c.section_name for c in clauses}
         findings = [
