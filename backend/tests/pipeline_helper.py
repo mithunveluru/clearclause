@@ -4,7 +4,8 @@ Exercises segmentation -> detection -> scoring -> reporting with no DB/OCR, so
 it is deterministic and runs anywhere. Not collected by pytest (no test_ prefix).
 """
 from app.detection import detect
-from app.reporting import build_summary, render_html
+from app.core import storage
+from app.reporting import build_pdf, build_summary
 from app.scoring import estimate_cost, score_findings
 from app.scoring.risk import band, summarize
 from app.segmentation import segment
@@ -53,5 +54,15 @@ def run_pipeline(lines: list[str], filename: str = "doc.txt") -> dict:
         "band": band(cats["total"]),
         "cost": cost,
         "summary": summary,
-        "html": render_html(summary),
+        "pdf_text": _pdf_text(summary),
     }
+
+
+def _pdf_text(summary: dict) -> str:
+    """Text of the report the product actually ships."""
+    import pdfplumber
+
+    with storage.temp_file(b"", ".pdf") as tmp:
+        build_pdf(summary, tmp)
+        with pdfplumber.open(tmp) as pdf:
+            return "\n".join(page.extract_text() or "" for page in pdf.pages)

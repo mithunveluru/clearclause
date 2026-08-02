@@ -196,9 +196,6 @@ export const deleteDocument = (id: number) =>
 export const documentFileUrl = (id: number, page?: number | null) =>
   `${BASE}/api/v1/documents/${id}/file${page != null ? `#page=${page}` : ""}`;
 
-export const analyzeDocument = async (id: number): Promise<{ status: string }> =>
-  (await req(`/api/v1/documents/${id}/analyze`, { method: "POST" })).json();
-
 // Resets status so the caller poll resumes
 export const reprocessDocument = async (id: number): Promise<{ status: string }> =>
   (await req(`/api/v1/documents/${id}/reprocess`, { method: "POST" })).json();

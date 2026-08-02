@@ -2,7 +2,7 @@ import re
 
 import pdfplumber
 
-from app.reporting import build_pdf, build_summary, render_html
+from app.reporting import build_pdf, build_summary
 
 DOC = {"id": 1, "filename": "loan.pdf", "source_type": "pdf", "doc_type": "loan"}
 RISK = {
@@ -77,9 +77,3 @@ def test_pdf_omits_key_dates_when_there_are_none():
     assert "Key Dates and Periods" not in text
 
 
-def test_render_html_contains_key_sections():
-    html = render_html(build_summary(DOC, FINDINGS, RISK, COST))
-    assert "72/100" in html and "High" in html
-    assert "foreclosure charge" in html.lower()
-    assert "High-risk terms detected" in html  # warning banner present
-    assert "Ask the exact fee." in html
