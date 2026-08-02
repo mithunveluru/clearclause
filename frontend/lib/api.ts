@@ -176,8 +176,10 @@ export async function logout(): Promise<void> {
   });
 }
 
-export const listDocuments = async (): Promise<Doc[]> =>
-  (await req("/api/v1/documents")).json();
+export const DOCUMENTS_PAGE_SIZE = 50;
+
+export const listDocuments = async (offset = 0): Promise<Doc[]> =>
+  (await req(`/api/v1/documents?limit=${DOCUMENTS_PAGE_SIZE}&offset=${offset}`)).json();
 
 export const getDocument = async (id: number): Promise<Doc> =>
   (await req(`/api/v1/documents/${id}`)).json();

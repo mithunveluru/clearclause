@@ -4,7 +4,7 @@ import { ChevronRight, FileSearch, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { deleteDocument, listDocuments, logout, type Doc } from "@/lib/api";
+import { deleteDocument, DOCUMENTS_PAGE_SIZE, listDocuments, logout, type Doc } from "@/lib/api";
 import { DocTypeBadge } from "@/components/DocTypeBadge";
 import UploadDropzone from "@/components/UploadDropzone";
 import { Button } from "@/components/ui/Button";
@@ -28,15 +28,34 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // A full page back means there may be more
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => { document.title = "Workspace — ClearClause"; }, []);
 
   const refresh = useCallback(() => {
     listDocuments()
-      .then(setDocs)
+      .then((page) => {
+        setDocs(page);
+        setHasMore(page.length === DOCUMENTS_PAGE_SIZE);
+      })
       .catch(() => router.push("/login"))
       .finally(() => setLoading(false));
   }, [router]);
+
+  async function loadMore() {
+    setLoadingMore(true);
+    try {
+      const page = await listDocuments(docs.length);
+      setDocs((prev) => [...prev, ...page]);
+      setHasMore(page.length === DOCUMENTS_PAGE_SIZE);
+    } catch {
+      // Leave the list intact; the button stays available
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -173,6 +192,14 @@ export default function Dashboard() {
                   ))}
                 </m.div>
               </Surface>
+            )}
+
+            {hasMore && (
+              <div className="mt-5 flex justify-center">
+                <Button variant="secondary" onClick={loadMore} disabled={loadingMore}>
+                  {loadingMore ? "Loading…" : "Load older documents"}
+                </Button>
+              </div>
             )}
           </div>
         </div>

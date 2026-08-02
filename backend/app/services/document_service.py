@@ -47,8 +47,10 @@ class DocumentService:
         self.store.put(key, content)
         return await self.repo.create(user_id, filename, key, source_type)
 
-    async def list_documents(self, user_id: int) -> list[Document]:
-        return await self.repo.list_for_user(user_id)
+    async def list_documents(
+        self, user_id: int, limit: int = 50, offset: int = 0
+    ) -> list[Document]:
+        return await self.repo.list_for_user(user_id, limit=limit, offset=offset)
 
     async def get(self, doc_id: int, user_id: int) -> Document:
         doc = await self.repo.get_for_user(doc_id, user_id)

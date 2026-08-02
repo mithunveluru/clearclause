@@ -1,6 +1,6 @@
 import mimetypes
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -48,10 +48,13 @@ async def upload(
 
 @router.get("", response_model=list[DocumentOut])
 async def list_documents(
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
     user: User = Depends(get_current_user),
     svc: DocumentService = Depends(_service),
 ):
-    return await svc.list_documents(user.id)
+    """Newest first. Bounded so one heavy account cannot return every row."""
+    return await svc.list_documents(user.id, limit=limit, offset=offset)
 
 
 @router.get("/{doc_id}", response_model=DocumentOut)
