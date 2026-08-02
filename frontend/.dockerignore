@@ -1,2 +1,11 @@
+# Never bake secrets into an image layer
+.env
+.env.*
+
+# Host copies would overwrite the npm ci result
 node_modules
 .next
+
+npm-debug.log*
+*.tsbuildinfo
+.git
