@@ -23,6 +23,8 @@ from reportlab.platypus import (
 )
 from reportlab.platypus.tableofcontents import TableOfContents
 
+from app.scoring.cost import INR, PERCENT
+
 INK = colors.HexColor("#191919")
 INK2 = colors.HexColor("#5f5f63")
 INK3 = colors.HexColor("#9a9aa0")
@@ -55,19 +57,21 @@ def _label(issue_type: str) -> str:
     return issue_type.replace("_", " ").title()
 
 
-def _cost_value(key: str, v) -> str:
-    """Render a cost field with a unit only where the unit is known.
+def _cost_value(key: str, v, unit: str | None = None) -> str:
+    """Render a cost field with its unit.
 
-    scoring/cost.py discards whether a fee was currency or percent, so the four
-    ambiguous fields print exactly as extracted. headline_rate is percent by
-    construction and estimated_true_cost sums rupee amounts only.
+    headline_rate is a percentage by construction and estimated_true_cost sums rupee
+    amounts only. The four fee fields carry the unit the clause stated; a row written
+    before that was recorded has none, and prints bare rather than guessing.
     """
     if v is None:
         return "—"
     if key == "headline_rate":
         return f"{v:g}% p.a."
-    if key == "estimated_true_cost":
+    if key == "estimated_true_cost" or unit == INR:
         return f"Rs. {v:,.0f}"  # Helvetica has no glyph for the rupee sign
+    if unit == PERCENT:
+        return f"{v:g}%"
     return f"{v:,g}"
 
 
@@ -300,8 +304,7 @@ def build_pdf(summary: dict, out_path: str) -> str:
                        ("late_fee", "Late fee"), ("renewal_fee", "Renewal fee"),
                        ("foreclosure_charge", "Foreclosure charge"),
                        ("estimated_true_cost", "Estimated true cost")]:
-        v = cost.get(key)
-        cost_rows.append([label, _cost_value(key, v)])
+        cost_rows.append([label, _cost_value(key, cost.get(key), cost.get(f"{key}_unit"))])
     ctab = Table(cost_rows, colWidths=[10 * cm, 6 * cm])
     ctab.setStyle(TableStyle([
         ("FONT", (0, 0), (-1, 0), "Helvetica-Bold", 9), ("TEXTCOLOR", (0, 0), (-1, 0), INK),
@@ -313,10 +316,11 @@ def build_pdf(summary: dict, out_path: str) -> str:
         ("LEFTPADDING", (0, 0), (-1, -1), 10), ("RIGHTPADDING", (0, 0), (-1, -1), 10),
     ]))
     story += [ctab, Spacer(1, 6),
-              Paragraph("Fees are reproduced exactly as the agreement states them — a figure "
-                        "may be a rupee amount or a percentage. The estimated true cost sums "
-                        "known rupee amounts only; percentages are excluded because computing "
-                        "them needs a principal this document does not reliably state.",
+              Paragraph("Fees are reproduced exactly as the agreement states them, in the unit "
+                        "it used; a figure shown without one is a fee the agreement stated "
+                        "without a unit. The estimated true cost sums known rupee amounts only; "
+                        "percentages are excluded because computing them needs a principal this "
+                        "document does not reliably state.",
                         st["small"])]
 
     # Key dates and periods

@@ -2,12 +2,7 @@ from app.repositories.analyzer_run_repo import AnalyzerRunRepository
 from app.repositories.clause_repo import ClauseRepository
 from app.repositories.finding_repo import FindingRepository
 from app.repositories.score_repo import ScoreRepository
-from app.scoring import estimate_cost, score_findings
-
-_EMPTY_COST = {
-    "headline_rate": None, "processing_fee": None, "late_fee": None,
-    "renewal_fee": None, "foreclosure_charge": None, "estimated_true_cost": None,
-}
+from app.scoring import empty_cost, estimate_cost, score_findings
 
 
 class ScoringService:
@@ -34,7 +29,7 @@ class ScoringService:
                     "renewal": 0, "consent": 0, "cancellation": 0,
                 }
                 await self.scores.save_risk(document_id, cats)
-                await self.scores.save_cost(document_id, dict(_EMPTY_COST))
+                await self.scores.save_cost(document_id, empty_cost())
                 return cats
 
         # Consumer (fee-weighted) path.

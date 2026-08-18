@@ -11,6 +11,7 @@ from app.repositories.document_repo import DocumentRepository
 from app.repositories.entity_repo import EntityRepository
 from app.repositories.finding_repo import FindingRepository
 from app.repositories.score_repo import ScoreRepository
+from app.scoring.cost import cost_dict
 from app.scoring.risk import band
 
 
@@ -51,14 +52,7 @@ class AISummaryService:
             "entities": [
                 {"type": humanize(e.entity_type), "value": e.entity_value} for e in entity_rows[:10]
             ],
-            "cost": {
-                "headline_rate": cost.headline_rate if cost else None,
-                "processing_fee": cost.processing_fee if cost else None,
-                "late_fee": cost.late_fee if cost else None,
-                "renewal_fee": cost.renewal_fee if cost else None,
-                "foreclosure_charge": cost.foreclosure_charge if cost else None,
-                "estimated_true_cost": cost.estimated_true_cost if cost else None,
-            } if cost else None,
+            "cost": cost_dict(cost) if cost else None,
         }
 
     async def process(self, document_id: int) -> str:
