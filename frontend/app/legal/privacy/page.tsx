@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalDoc } from "@/components/legal/LegalDoc";
+import { CONTACT, ENTITY, GRIEVANCE_OFFICER } from "@/lib/legal";
+import { MailLink } from "@/components/legal/MailLink";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — ClearClause",
@@ -266,11 +268,32 @@ export default function PrivacyPolicy() {
               </p>
               <p>
                 For the remaining rights, or any concern about how your data is handled, email{" "}
-                <a href="mailto:privacy@clearclause.demo">privacy@clearclause.demo</a>.
+                <MailLink address={CONTACT.privacy} />.
               </p>
             </>
           ),
         },
+        // The DPDP Act requires publishing this contact. Rendered only once a real
+        // officer is appointed in lib/legal.ts — an invented name would be worse
+        // than none, because people would write to it.
+        ...(GRIEVANCE_OFFICER.name
+          ? [
+              {
+                id: "grievance",
+                title: "Grievance officer",
+                body: (
+                  <p>
+                    {ENTITY.name} is the Data Fiduciary for the personal data described in
+                    this policy. If a request under the rights above is not answered to
+                    your satisfaction, {GRIEVANCE_OFFICER.name} is our Grievance Officer
+                    and can be reached at{" "}
+                    <MailLink address={GRIEVANCE_OFFICER.email} />. If the matter is still
+                    unresolved, you may escalate it to the Data Protection Board of India.
+                  </p>
+                ),
+              },
+            ]
+          : []),
         {
           id: "children",
           title: "Children",
@@ -311,7 +334,7 @@ export default function PrivacyPolicy() {
           body: (
             <p>
               Privacy questions, requests, and complaints:{" "}
-              <a href="mailto:privacy@clearclause.demo">privacy@clearclause.demo</a>. If a
+              <MailLink address={CONTACT.privacy} />. If a
               concern is not resolved to your satisfaction, you may approach the Data Protection
               Board of India under the Digital Personal Data Protection Act, 2023. Other ways to
               reach us are listed on the <Link href="/legal/contact">Contact</Link> page.

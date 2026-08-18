@@ -215,3 +215,52 @@ def test_rotation_is_reused_across_pages(monkeypatch):
 
     assert angle == 90
     assert len(passes) == 1, "the hint should have been tried first and accepted"
+
+
+def _capture_config(monkeypatch) -> list[str]:
+    """Record the tesseract config string each read is issued with."""
+    seen: list[str] = []
+
+    def fake(image, config="", **kwargs):
+        seen.append(config)
+        return _fake_read("the loan of and to be", 90.0)
+
+    monkeypatch.setattr("app.ocr.tesseract.pytesseract.image_to_data", fake)
+    return seen
+
+
+def test_no_resolution_is_claimed_for_an_image_that_declares_none(monkeypatch):
+    # Asserting 300dpi on an upload nearer 100 tripled word error on the same file:
+    # the claimed resolution is how Tesseract decides what point size it is reading.
+    from PIL import Image
+
+    seen = _capture_config(monkeypatch)
+    TesseractOCRProvider()._read_page(Image.new("RGB", (600, 200), "white"), 1, dpi=None)
+
+    assert seen, "no read was issued"
+    assert all("--dpi" not in c for c in seen), f"a resolution was invented: {seen}"
+
+
+def test_a_known_resolution_is_passed_through(monkeypatch):
+    # Rasterized PDF pages: we chose the resolution, so Tesseract should be told
+    from PIL import Image
+
+    seen = _capture_config(monkeypatch)
+    TesseractOCRProvider()._read_page(Image.new("RGB", (600, 200), "white"), 1, dpi=200)
+
+    assert all("--dpi 200" in c for c in seen), f"the real resolution was withheld: {seen}"
+
+
+def test_declared_dpi_is_read_from_the_file_only():
+    from PIL import Image
+
+    from app.ocr.tesseract import _declared_dpi
+
+    assert _declared_dpi(Image.new("RGB", (10, 10))) is None
+    with_dpi = Image.new("RGB", (10, 10))
+    with_dpi.info["dpi"] = (150.0, 150.0)
+    assert _declared_dpi(with_dpi) == 150
+    # A zero is a malformed header, not a resolution
+    zeroed = Image.new("RGB", (10, 10))
+    zeroed.info["dpi"] = (0, 0)
+    assert _declared_dpi(zeroed) is None

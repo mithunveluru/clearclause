@@ -30,6 +30,17 @@ _FIELD_FOR_ISSUE = {
     "foreclosure_charge": "foreclosure_charge",
 }
 
+# Wording that locates the sentence a given fee is stated in
+_PHRASES_FOR_FIELD = {
+    "processing_fee": ("processing fee", "processing charge", "service fee"),
+    "late_fee": ("late payment", "late fee", "overdue", "default charge"),
+    "renewal_fee": ("renew", "renewal"),
+    "foreclosure_charge": ("foreclos", "prepay", "pre-pay", "pre-clos", "early clos"),
+}
+
+# Clause blocks arrive holding several sentences; split before reading an amount
+_SENTENCE = re.compile(r"(?<=[.;])\s+|\n+")
+
 _CUR = re.compile(r"(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d+)?)|([\d,]+(?:\.\d+)?)\s*(?:rupees|rs\b)", re.I)
 _PCT = re.compile(r"(\d+(?:\.\d+)?)\s*(?:%|percent|per\s*cent)", re.I)
 _RATE = re.compile(
@@ -47,6 +58,22 @@ def _amount(text: str) -> tuple[float | None, str | None]:
     if m:
         return float(m.group(1)), PERCENT
     return None, None
+
+
+def _sentence_for(text: str, field: str) -> str:
+    """The sentence stating this fee, falling back to the whole block if none names it.
+
+    Segmentation hands back a block that can hold an entire agreement, and the first
+    currency figure in such a block belongs to whichever fee happened to appear first.
+    That is how a processing fee of "2 percent" was reported as Rs 500 — the rupee
+    amount three sentences later belonged to the late payment charge.
+    """
+    phrases = _PHRASES_FOR_FIELD.get(field, ())
+    for sentence in _SENTENCE.split(text):
+        lowered = sentence.lower()
+        if any(phrase in lowered for phrase in phrases):
+            return sentence
+    return text
 
 
 def _headline_rate(texts: list[str]) -> float | None:
@@ -69,7 +96,7 @@ def estimate_cost(findings: list[dict], clause_texts: list[str]) -> dict:
         field = _FIELD_FOR_ISSUE.get(f["issue_type"])
         if not field or out[field] is not None:
             continue
-        val, unit = _amount(f.get("clause_text") or "")
+        val, unit = _amount(_sentence_for(f.get("clause_text") or "", field))
         out[field], out[f"{field}_unit"] = val, unit
         if unit == INR and val:
             true_cost += val
