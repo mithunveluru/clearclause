@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { deleteDocument, DOCUMENTS_PAGE_SIZE, listDocuments, logout, type Doc } from "@/lib/api";
 import { DocTypeBadge } from "@/components/DocTypeBadge";
 import UploadDropzone from "@/components/UploadDropzone";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { staggerContainer, staggerItem, easeSmooth } from "@/components/ui/motion";
 import { DocRowSkeleton } from "@/components/ui/Skeleton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -75,6 +75,10 @@ export default function Dashboard() {
     <>
       <TopBar
         right={
+          <>
+          <ButtonLink variant="ghost" href="/account">
+            Account
+          </ButtonLink>
           <Button
             variant="ghost"
             onClick={async () => {
@@ -84,6 +88,7 @@ export default function Dashboard() {
           >
             Log out
           </Button>
+          </>
         }
       />
 

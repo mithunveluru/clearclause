@@ -19,8 +19,16 @@ HEADER = "X-CSRF-Token"
 
 _SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 # No session exists yet so no token can be sent
-# Both are rate limited and forging them gains nothing
-_EXEMPT_PATHS = frozenset({"/api/v1/auth/login", "/api/v1/auth/register"})
+# All are rate limited and forging them gains nothing: the reset link travels by
+# email, so a forged request only mails the account's real owner
+_EXEMPT_PATHS = frozenset(
+    {
+        "/api/v1/auth/login",
+        "/api/v1/auth/register",
+        "/api/v1/auth/forgot-password",
+        "/api/v1/auth/reset-password",
+    }
+)
 
 
 def new_token() -> str:

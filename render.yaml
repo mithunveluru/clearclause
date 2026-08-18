@@ -37,6 +37,18 @@ services:
       # Set to your Vercel production domain after the first frontend deploy
       - key: CORS_ORIGINS
         sync: false
+      # Same domain: password reset links are built against it
+      - key: PUBLIC_APP_URL
+        sync: false
+      # Password reset cannot work without these; the app refuses to start without a host
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false
       # Vercel preview deploys get a new hostname per commit
       - key: CORS_ORIGIN_REGEX
         sync: false

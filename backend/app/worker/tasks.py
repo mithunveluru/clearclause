@@ -1,11 +1,12 @@
 import asyncio
 import os
+import smtplib
 from datetime import datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.core import storage
+from app.core import email, storage
 from app.core.config import settings
 from app.models.document import Document
 from app.models.report import Report
@@ -68,3 +69,18 @@ async def _cleanup() -> dict:
 def cleanup_stale_files() -> dict:
     """Delete documents past retention and sweep unreferenced local files."""
     return asyncio.run(_cleanup())
+
+
+@celery_app.task(
+    name="send_email",
+    autoretry_for=(OSError, smtplib.SMTPException),
+    retry_backoff=True,
+    max_retries=3,
+)
+def send_email(to: str, subject: str, body: str) -> None:
+    """Deliver one transactional email.
+
+    Queued rather than sent inline: an SMTP handshake against a third party must
+    not block an API worker, and a reset mail that arrives a second late is fine.
+    """
+    email.send(to, subject, body)

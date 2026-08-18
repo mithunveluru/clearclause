@@ -26,3 +26,17 @@ class UserOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    password: str = Field(min_length=8, max_length=128)
+
+
+class AccountDeleteRequest(BaseModel):
+    # Erasure is irreversible: a stolen session must not be enough to trigger it
+    password: str

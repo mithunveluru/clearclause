@@ -23,3 +23,11 @@ class UserRepository:
         await self.db.commit()
         await self.db.refresh(user)
         return user
+
+    async def set_password(self, user: User, password_hash: str) -> None:
+        user.password_hash = password_hash
+        await self.db.commit()
+
+    async def delete(self, user: User) -> None:
+        await self.db.delete(user)
+        await self.db.commit()
