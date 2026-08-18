@@ -33,7 +33,14 @@ from app.worker.pipeline import dispatch
 router = APIRouter(prefix="/api/v1/documents", tags=["analysis"])
 
 
-@router.post("/{doc_id}/analyze", status_code=status.HTTP_202_ACCEPTED)
+# Both routes below enqueue the full pipeline, so they cost what an upload costs.
+# They are deliberately not charged against the monthly quota: reprocess is usually a
+# retry of a failure that was ours, and billing the user for that is backwards.
+@router.post(
+    "/{doc_id}/analyze",
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(rate_limit(limit=10, window=60, scope="analyze"))],
+)
 async def analyze(
     doc_id: int,
     user: User = Depends(get_current_user),
@@ -45,7 +52,11 @@ async def analyze(
     return {"status": "queued", "pipeline": mode}
 
 
-@router.post("/{doc_id}/reprocess", status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "/{doc_id}/reprocess",
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(rate_limit(limit=10, window=60, scope="reprocess"))],
+)
 async def reprocess(
     doc_id: int,
     user: User = Depends(get_current_user),

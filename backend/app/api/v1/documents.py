@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
+from app.core import quota
 from app.core.config import settings
 from app.core.ratelimit import rate_limit
 from app.db.session import get_db
@@ -32,6 +33,8 @@ async def upload(
     user: User = Depends(get_current_user),
     svc: DocumentService = Depends(_service),
 ):
+    # Before reading the body: no point spending bandwidth on an upload we will refuse
+    await quota.enforce(user.id)
     max_bytes = settings.MAX_UPLOAD_MB * 1024 * 1024
     content = await file.read(max_bytes + 1)  # bounded read
     if len(content) > max_bytes:
@@ -42,6 +45,7 @@ async def upload(
     if not content:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file")
     doc = await svc.upload(user.id, file.filename or "upload", content)
+    await quota.record(user.id)  # only now: a rejected file must not cost the user
     dispatch(doc.id, user.id)
     return doc
 

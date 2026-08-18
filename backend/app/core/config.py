@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     MAX_UPLOAD_MB: int = 10
     MAX_PDF_PAGES: int = 50   # a 10MB PDF can hold thousands of pages; OCR memory scales with them
     FILE_RETENTION_DAYS: int = 7
+    # Documents one account may upload per calendar month; 0 disables the cap. OCR is
+    # CPU-bound, so this is the ceiling on what a single account can cost.
+    MONTHLY_UPLOAD_LIMIT: int = 20
     CORS_ORIGINS: str = "http://localhost:3000"  # comma-separated
     CORS_ORIGIN_REGEX: str = ""       # Vercel previews get a new hostname per commit
     # Password reset links are built against this; it is what the user's browser sees
