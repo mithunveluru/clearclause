@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     S3_REGION: str = ""
     OCR_PROVIDER: str = "auto"  # auto = PDF text layer first, OCR only scanned pages
     OCR_LOW_CONFIDENCE: int = 60  # below this mean OCR confidence, warn the user (0-100)
+    # Retried only on pages English could not read; patta and sale deeds are often Tamil.
+    # Needs the matching tesseract-ocr-<lang> package; blank disables the retry.
+    OCR_FALLBACK_LANGS: str = "eng+tam"
     OTEL_EXPORTER_OTLP_ENDPOINT: str = ""
     MAX_UPLOAD_MB: int = 10
     MAX_PDF_PAGES: int = 50   # a 10MB PDF can hold thousands of pages; OCR memory scales with them

@@ -48,7 +48,9 @@ class TesseractOCRProvider(OCRProvider):
     "rotate 180" at confidence 2.4 on upright pages and corrupted them.
     """
 
-    def __init__(self, dpi: int = 200):
+    # 300dpi, not 200: at 200 an 8pt clause renders ~11px tall, right at Tesseract's
+    # floor — and fine print is exactly the text this product exists to read.
+    def __init__(self, dpi: int = 300):
         self.dpi = dpi
 
     def extract_page(self, file_path: str, page_number: int, hint: int = 0) -> list[dict]:
@@ -92,28 +94,58 @@ class TesseractOCRProvider(OCRProvider):
         if base.legible:
             return base.blocks, hint
 
-        # A rotation must out-read the page as found
+        # A rotation must be readable, not merely score better: on a page of numbers
+        # (a repayment schedule) noise at 90 degrees out-counts real text at 0, and the
+        # wrong angle then becomes the hint for every page after it.
         best_angle, best = hint, base
         for angle in (a for a in _ANGLES if a != hint):
             read = self._read(image, page_number, angle)
-            if read.function_words > best.function_words:
+            if read.legible and read.function_words > best.function_words:
                 best_angle, best = angle, read
-            if read.legible:
                 break
 
         if best_angle != hint:
             logger.info("page %d read %d degrees rotated", page_number, best_angle)
+        else:
+            # Illegible at every angle — English may just be the wrong alphabet
+            best = self._other_script(image, page_number, best_angle, best)
         if not best.blocks:
             # Bad scan, not an empty page
             logger.warning("page %d produced no usable text", page_number)
         return best.blocks, best_angle
 
-    def _read(self, image: Image.Image, page_number: int, angle: int) -> _Read:
+    def _other_script(
+        self, image: Image.Image, page_number: int, angle: int, best: _Read
+    ) -> _Read:
+        """Re-read an English-illegible page in the fallback alphabets.
+
+        Function words cannot judge this read — a correct Tamil page scores zero of
+        them — so confidence decides instead: the English model on Tamil script emits
+        low-confidence Latin noise, the Tamil model reads the same pixels cleanly.
+        """
+        if not settings.OCR_FALLBACK_LANGS:
+            return best
+        # ponytail: retried at the settled angle only. A scan both rotated and
+        # non-English needs the full 4x2 search; add it when one turns up.
+        try:
+            read = self._read(image, page_number, angle, langs=settings.OCR_FALLBACK_LANGS)
+        except pytesseract.TesseractError:
+            # A missing language pack must not fail the document
+            logger.warning("fallback languages %s unavailable", settings.OCR_FALLBACK_LANGS)
+            return best
+        if read.confidence <= best.confidence:
+            return best
+        logger.info("page %d read as %s", page_number, settings.OCR_FALLBACK_LANGS)
+        return read
+
+    def _read(
+        self, image: Image.Image, page_number: int, angle: int, langs: str = "eng"
+    ) -> _Read:
         rotated = image.rotate(angle, expand=True, fillcolor="white") if angle else image
         try:
             # Without the real dpi, confidences are meaningless
             data = pytesseract.image_to_data(
-                rotated, output_type=Output.DICT, config=f"--dpi {self.dpi}"
+                rotated, output_type=Output.DICT, config=f"--dpi {self.dpi} -l {langs}"
             )
         finally:
             if rotated is not image:
