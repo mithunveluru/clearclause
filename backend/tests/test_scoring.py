@@ -1,5 +1,6 @@
-from app.scoring import estimate_cost, score_findings, summarize
+from app.scoring import INR, PERCENT, estimate_cost, score_findings, summarize
 from app.scoring.risk import band
+from app.reporting.pdf import _cost_value
 import pytest
 pytestmark = pytest.mark.v1_regression
 
@@ -45,3 +46,22 @@ def test_cost_extraction_currency_vs_percent():
     assert cost["processing_fee"] == 2.0         # percent -> stored, not summed
     assert cost["estimated_true_cost"] == 500.0  # only the currency amount
     assert cost["headline_rate"] == 18.0
+
+
+def test_each_fee_carries_the_unit_it_was_written_in():
+    # Rs 4 and 4% differ by orders of magnitude; the number alone cannot be shown
+    cost = estimate_cost(BAD, [])
+
+    assert (cost["late_fee"], cost["late_fee_unit"]) == (500.0, INR)
+    assert (cost["processing_fee"], cost["processing_fee_unit"]) == (2.0, PERCENT)
+    assert (cost["foreclosure_charge"], cost["foreclosure_charge_unit"]) == (4.0, PERCENT)
+    # Stated with no figure at all: no value, and so no unit to claim
+    assert (cost["renewal_fee"], cost["renewal_fee_unit"]) == (None, None)
+
+
+def test_a_fee_with_no_unit_is_rendered_without_one():
+    # A row written before units were recorded must not be given a guessed unit
+    assert _cost_value("processing_fee", 4.0, None) == "4"
+    assert _cost_value("processing_fee", 4.0, PERCENT) == "4%"
+    assert _cost_value("processing_fee", 4.0, INR) == "Rs. 4"
+    assert _cost_value("headline_rate", 18.0, None) == "18% p.a."

@@ -2,8 +2,26 @@
 
 Percentages are stored but never summed; that needs a principal the document
 does not reliably state. Resolve the principal first, then compound.
+
+Each fee is stored with the unit it was written in. Without that, "4" is a number
+nobody can read: Rs 4 and 4% of a loan are different by five orders of magnitude,
+and the report used to print the bare figure and hope the reader guessed right.
 """
 import re
+
+INR = "inr"
+PERCENT = "percent"
+
+# Fees whose written form genuinely varies between documents
+AMBIGUOUS_FIELDS = ("processing_fee", "late_fee", "renewal_fee", "foreclosure_charge")
+# headline_rate is a percentage by construction, estimated_true_cost rupees by
+# construction, so neither needs a stored unit
+COST_FIELDS = (
+    "headline_rate",
+    *AMBIGUOUS_FIELDS,
+    "estimated_true_cost",
+    *(f"{field}_unit" for field in AMBIGUOUS_FIELDS),
+)
 
 _FIELD_FOR_ISSUE = {
     "processing_fee": "processing_fee",
@@ -24,10 +42,10 @@ _RATE = re.compile(
 def _amount(text: str) -> tuple[float | None, str | None]:
     m = _CUR.search(text)
     if m:
-        return float((m.group(1) or m.group(2)).replace(",", "")), "amount"
+        return float((m.group(1) or m.group(2)).replace(",", "")), INR
     m = _PCT.search(text)
     if m:
-        return float(m.group(1)), "pct"
+        return float(m.group(1)), PERCENT
     return None, None
 
 
@@ -39,25 +57,32 @@ def _headline_rate(texts: list[str]) -> float | None:
     return None
 
 
+def empty_cost() -> dict:
+    """A breakdown with nothing extracted — every field, so it maps onto the row."""
+    return dict.fromkeys(COST_FIELDS)
+
+
 def estimate_cost(findings: list[dict], clause_texts: list[str]) -> dict:
-    out = {
-        "headline_rate": None,
-        "processing_fee": None,
-        "late_fee": None,
-        "renewal_fee": None,
-        "foreclosure_charge": None,
-        "estimated_true_cost": None,
-    }
+    out = empty_cost()
     true_cost, have_amount = 0.0, False
     for f in findings:
         field = _FIELD_FOR_ISSUE.get(f["issue_type"])
         if not field or out[field] is not None:
             continue
-        val, kind = _amount(f.get("clause_text") or "")
-        out[field] = val
-        if kind == "amount" and val:
+        val, unit = _amount(f.get("clause_text") or "")
+        out[field], out[f"{field}_unit"] = val, unit
+        if unit == INR and val:
             true_cost += val
             have_amount = True
     out["headline_rate"] = _headline_rate(clause_texts)
     out["estimated_true_cost"] = round(true_cost, 2) if have_amount else None
     return out
+
+
+def cost_dict(cost) -> dict:
+    """A stored CostBreakdown row as a plain dict, units included.
+
+    Shared so the PDF and the AI summary read the same fields; a unit added to one
+    and forgotten in the other is how a report and a summary end up disagreeing.
+    """
+    return {field: getattr(cost, field, None) for field in COST_FIELDS} if cost else empty_cost()

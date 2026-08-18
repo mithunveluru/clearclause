@@ -6,6 +6,7 @@ from app.repositories.entity_repo import EntityRepository
 from app.repositories.finding_repo import FindingRepository
 from app.repositories.report_repo import ReportRepository
 from app.repositories.score_repo import ScoreRepository
+from app.scoring.cost import cost_dict
 from app.scoring.risk import band, summarize
 from app.services.explorer_service import timeline_entries
 
@@ -85,14 +86,7 @@ class ReportService:
                 "breakdown": {k: v for k, v in cats.items() if k != "total"},
             },
             key_dates=key_dates,
-            cost={
-                "headline_rate": cost.headline_rate if cost else None,
-                "processing_fee": cost.processing_fee if cost else None,
-                "late_fee": cost.late_fee if cost else None,
-                "renewal_fee": cost.renewal_fee if cost else None,
-                "foreclosure_charge": cost.foreclosure_charge if cost else None,
-                "estimated_true_cost": cost.estimated_true_cost if cost else None,
-            },
+            cost=cost_dict(cost),
         )
 
         # reportlab writes to a path, not bytes
