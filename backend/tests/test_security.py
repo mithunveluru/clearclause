@@ -16,6 +16,8 @@ PROD = dict(
     JWT_SECRET="a-real-secret-value",
     COOKIE_SECURE=True,
     CORS_ORIGINS="https://clearclause.app",
+    PUBLIC_APP_URL="https://clearclause.app",
+    SMTP_HOST="smtp.example.com",
 )
 
 
@@ -55,6 +57,8 @@ def test_production_config_accepts_a_secure_deployment():
         {"JWT_SECRET": "change-me-in-prod"},   # default signing key
         {"COOKIE_SECURE": False},              # auth cookies without the Secure flag
         {"CORS_ORIGINS": "http://app.test"},   # plaintext origin
+        {"PUBLIC_APP_URL": "http://app.test"},  # reset links over plaintext
+        {"SMTP_HOST": ""},                      # password reset would mail nothing
     ],
 )
 def test_production_refuses_to_start_insecure(override):

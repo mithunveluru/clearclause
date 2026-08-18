@@ -45,10 +45,17 @@ openssl rand -hex 16     # METRICS_TOKEN
 ```
 
 Fill in every blank. The app **refuses to start** with `ENV=production` if
-`JWT_SECRET` is still the default, `COOKIE_SECURE` is false, or any CORS origin is
-plaintext `http://`. That check lives in `Settings`, so it covers the API, the worker
-and migrations alike — a misconfigured deploy fails loudly at boot rather than
-quietly serving auth cookies over plain HTTP.
+`JWT_SECRET` is still the default, `COOKIE_SECURE` is false, any CORS origin is
+plaintext `http://`, `PUBLIC_APP_URL` is not `https://`, or `SMTP_HOST` is blank.
+That check lives in `Settings`, so it covers the API, the worker and migrations alike
+— a misconfigured deploy fails loudly at boot rather than quietly serving auth
+cookies over plain HTTP.
+
+`SMTP_HOST` is in that list because password reset is the only way a user who forgot
+their password gets back in, and a blank host makes the reset endpoint succeed while
+mailing nothing — a failure with no error to report. Any SMTP provider works (Resend,
+SES, Postmark, Mailgun); `PUBLIC_APP_URL` is what the reset links point at, so it must
+be the domain the user's browser actually sees.
 
 `TRUSTED_PROXY_DEPTH=1` matters: exactly one proxy (Caddy) sits in front. Set it to 0
 and every request appears to come from Caddy's IP, so one user's traffic rate-limits

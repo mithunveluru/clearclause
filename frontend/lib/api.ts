@@ -176,6 +176,25 @@ export async function logout(): Promise<void> {
   });
 }
 
+const jsonPost = (path: string, body: unknown) =>
+  req(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+export const requestPasswordReset = (email: string) =>
+  jsonPost("/api/v1/auth/forgot-password", { email });
+
+export const resetPassword = (token: string, password: string) =>
+  jsonPost("/api/v1/auth/reset-password", { token, password });
+
+export const exportAccount = async (): Promise<unknown> =>
+  (await req("/api/v1/auth/me/export")).json();
+
+export const deleteAccount = (password: string) =>
+  jsonPost("/api/v1/auth/me/delete", { password });
+
 export const DOCUMENTS_PAGE_SIZE = 50;
 
 export const listDocuments = async (offset = 0): Promise<Doc[]> =>

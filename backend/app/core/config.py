@@ -31,6 +31,16 @@ class Settings(BaseSettings):
     FILE_RETENTION_DAYS: int = 7
     CORS_ORIGINS: str = "http://localhost:3000"  # comma-separated
     CORS_ORIGIN_REGEX: str = ""       # Vercel previews get a new hostname per commit
+    # Password reset links are built against this; it is what the user's browser sees
+    PUBLIC_APP_URL: str = "http://localhost:3000"
+
+    # Transactional email. Blank host logs the message instead of sending it, which
+    # is what dev and CI want — and what production must not do, hence the invariant.
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = "ClearClause <noreply@localhost>"
 
     ENV: str = "development"          # set to "production" in prod deployments
     COOKIE_SECURE: bool = False       # set True when serving over HTTPS
@@ -75,6 +85,11 @@ class Settings(BaseSettings):
             problems.append("COOKIE_SECURE must be true (auth cookies need the Secure flag)")
         if any(o.startswith("http://") for o in self.cors_origins_list):
             problems.append("CORS_ORIGINS contains a plaintext http:// origin")
+        if not self.PUBLIC_APP_URL.startswith("https://"):
+            problems.append("PUBLIC_APP_URL must be an https:// URL (reset links use it)")
+        if not self.SMTP_HOST:
+            # Without it, password reset silently succeeds and mails nothing
+            problems.append("SMTP_HOST is required (password reset cannot work without it)")
         if problems:
             raise ValueError("Refusing to start in production: " + "; ".join(problems))
         return self

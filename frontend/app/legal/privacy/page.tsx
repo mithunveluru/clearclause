@@ -172,11 +172,10 @@ export default function PrivacyPolicy() {
                 automatic seven-day deletion handle it.
               </li>
               <li>
-                <strong>Your account:</strong> email{" "}
-                <a href="mailto:privacy@clearclause.demo">privacy@clearclause.demo</a> from the
-                address you registered with, and we will delete your account and any remaining
-                data associated with it. Account deletion is handled on request rather than
-                through an in-app control.
+                <strong>Your account:</strong> delete it yourself from{" "}
+                <Link href="/account">your account settings</Link>. This removes the account,
+                every document still held, and every report generated from them. It takes
+                effect immediately and cannot be undone.
               </li>
             </ul>
           ),
@@ -260,10 +259,14 @@ export default function PrivacyPolicy() {
                 to nominate another person to exercise these rights on your behalf.
               </p>
               <p>
-                To exercise any of these rights, email{" "}
-                <a href="mailto:privacy@clearclause.demo">privacy@clearclause.demo</a>. Deleting
-                documents requires no request at all — the control is in your workspace, and
-                automatic deletion runs regardless.
+                Access and erasure need no request: <Link href="/account">your account
+                settings</Link> will download everything we hold about you as a JSON file, and
+                delete your account and its data outright. Deleting individual documents is a
+                control in your workspace, and automatic deletion runs regardless.
+              </p>
+              <p>
+                For the remaining rights, or any concern about how your data is handled, email{" "}
+                <a href="mailto:privacy@clearclause.demo">privacy@clearclause.demo</a>.
               </p>
             </>
           ),

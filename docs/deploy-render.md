@@ -92,6 +92,10 @@ Set on the Render service. Secrets are entered in the dashboard and never commit
 | `TRUSTED_PROXY_DEPTH` | `1` | Render terminates TLS at a proxy. Leave at `0` and every request looks like it came from the proxy, so one user's traffic rate-limits everyone. |
 | `CORS_ORIGINS` | `https://<your-app>.vercel.app` | Your Vercel production domain. Fill in after step 4. |
 | `CORS_ORIGIN_REGEX` | `^https://<project>-.*\.vercel\.app$` | Optional — only if you want preview deploys to reach the API |
+| `PUBLIC_APP_URL` | `https://<your-app>.vercel.app` | Password reset links point here. Same value as `CORS_ORIGINS`. Fill in after step 4. |
+| `SMTP_HOST` | `smtp.resend.com` | **Required.** Any SMTP provider. Blank and the API refuses to start — a reset that mails nothing strands the user. |
+| `SMTP_USER` / `SMTP_PASSWORD` | *(secret)* | Your provider's SMTP credentials |
+| `SMTP_FROM` | `ClearClause <noreply@yourdomain>` | Must be an address your provider is allowed to send as |
 | `STORAGE_BACKEND` | `s3` | **Required.** `local` loses every document on redeploy. |
 | `S3_BUCKET` | `clearclause` | |
 | `S3_ENDPOINT_URL` | `https://<account>.r2.cloudflarestorage.com` | Blank for AWS S3 |
@@ -132,8 +136,8 @@ Deployment order matters, because each side needs the other's URL:
 
 1. Deploy the **backend** first — you get `https://clearclause-api.onrender.com`.
 2. Deploy the **frontend** with `NEXT_PUBLIC_API_BASE_URL` set to it.
-3. Go back to Render and set `CORS_ORIGINS` to your Vercel domain. **Save** — this restarts
-   the API.
+3. Go back to Render and set `CORS_ORIGINS` **and `PUBLIC_APP_URL`** to your Vercel domain.
+   **Save** — this restarts the API.
 
 Skip step 3 and every browser request fails CORS, while `curl` works fine. That mismatch is
 the single most common way this deployment "mysteriously" breaks.

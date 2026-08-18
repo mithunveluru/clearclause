@@ -66,7 +66,12 @@ export default function LoginPage() {
               {busy ? "Signing in…" : "Log in"}
             </Button>
           </form>
-          <p className="mt-7 text-center text-[0.875rem] text-ink-2">
+          <p className="mt-5 text-center text-[0.875rem]">
+            <Link href="/forgot-password" className="text-ink-2 hover:text-accent hover:underline">
+              Forgot your password?
+            </Link>
+          </p>
+          <p className="mt-3 text-center text-[0.875rem] text-ink-2">
             New to ClearClause?{" "}
             <Link href="/register" className="font-medium text-accent hover:underline">
               Create an account
