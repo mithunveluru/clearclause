@@ -42,13 +42,13 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements.txt
       - name: System deps (OCR)
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends tesseract-ocr poppler-utils
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-tam poppler-utils
       - name: Install
         run: |
           pip install -r requirements.txt
           pip install ruff==0.8.4
       - name: Lint (ruff)
-        run: ruff check app tests
+        run: ruff check app tests scripts
       - name: Migrate
         run: alembic upgrade head
       - name: Test

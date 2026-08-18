@@ -5,6 +5,7 @@ WORKDIR /app
 # OCR system deps, shared by backend and worker
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
+    tesseract-ocr-tam \
     poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 

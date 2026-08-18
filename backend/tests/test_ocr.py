@@ -166,6 +166,39 @@ def test_bad_scan_keeps_the_page_as_found(monkeypatch):
     assert angle == 0, "an unreadable page should not be rotated on a guess"
 
 
+def test_a_rotation_must_be_readable_not_merely_better(monkeypatch):
+    # A repayment schedule is mostly numbers: legitimately few function words.
+    # Noise that scores 3 must not beat real text that scores 2.
+    from PIL import Image
+
+    def fake(image, **kwargs):
+        upright = image.size == (100, 50)
+        return _fake_read("of the 1200 4500 7800" if upright else "in a of 3300", 85.0)
+
+    monkeypatch.setattr("app.ocr.tesseract.pytesseract.image_to_data", fake)
+
+    blocks, angle = TesseractOCRProvider()._read_page(Image.new("RGB", (100, 50), "white"), 1)
+
+    assert angle == 0, "an illegible page was rotated on a 3-vs-2 function word guess"
+    assert "1200" in " ".join(b["text"] for b in blocks)
+
+
+def test_other_script_page_is_reread_in_the_fallback_language(monkeypatch):
+    # Tamil pattas read as low-confidence Latin noise under the English model
+    from PIL import Image
+
+    def fake(image, config="", **kwargs):
+        if "tam" in config:
+            return _fake_read("patta land record chennai", 91.0)
+        return _fake_read(_NONSENSE, 24.0)
+
+    monkeypatch.setattr("app.ocr.tesseract.pytesseract.image_to_data", fake)
+
+    blocks, _ = TesseractOCRProvider()._read_page(Image.new("RGB", (100, 50), "white"), 1)
+
+    assert "patta" in " ".join(b["text"] for b in blocks), "fallback alphabet was never tried"
+
+
 def test_rotation_is_reused_across_pages(monkeypatch):
     # Pages share an orientation; only the first searches
     from PIL import Image
