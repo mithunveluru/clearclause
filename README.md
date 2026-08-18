@@ -77,7 +77,8 @@ implementation of a document-analysis pipeline with an auditable AI layer.
 
 - JWT auth in httpOnly cookies, with refresh-token rotation and revocation, and per-account login
   lockout.
-- OpenTelemetry traces, Prometheus metrics, Loki logs, Grafana dashboards.
+- Sentry error reporting, OpenTelemetry traces, Prometheus metrics with Alertmanager
+  routing, Loki logs, Grafana dashboards.
 - Production Compose stack with Caddy (automatic TLS), S3-compatible object storage, and a
   scaled-out worker.
 
@@ -144,7 +145,7 @@ skips, leaving the already-complete document intact.
 | Retrieval | Hybrid BM25 + vector, fused with Reciprocal Rank Fusion (implemented in-repo) |
 | Storage | Local directory (dev) or S3 / R2 / Spaces via boto3, SSE + signed URLs |
 | Reports | ReportLab |
-| Observability | OpenTelemetry, Prometheus, Loki, Tempo, Grafana |
+| Observability | Sentry, OpenTelemetry, Prometheus, Alertmanager, Loki, Tempo, Grafana |
 | Deployment | Docker Compose; Caddy reverse proxy with automatic TLS |
 | CI | GitHub Actions — ruff, pytest, tsc, ESLint, Docker build, Trivy scan |
 
@@ -188,7 +189,7 @@ frontend/
     ui/              Shared primitives
   lib/api.ts         Single REST client for the backend
 
-infra/               Observability stack (OTel Collector, Prometheus, Loki, Tempo, Grafana)
+infra/               Observability stack (OTel Collector, Prometheus, Alertmanager, Loki, Tempo, Grafana)
 deploy/Caddyfile     Production reverse proxy / TLS
 sample-data/         10 sample documents used by the seed script and E2E tests
 docs/                Demo walkthrough and deployment guide
@@ -258,7 +259,8 @@ an AI summary and an "ask about this document" panel with source citations.
 docker compose -f docker-compose.yml -f infra/docker-compose.obs.yml up --build
 ```
 
-Grafana at http://localhost:3001, Prometheus at http://localhost:9090.
+Grafana at http://localhost:3001, Prometheus at http://localhost:9090, Alertmanager at
+http://localhost:9093.
 
 ### Tests and lint
 

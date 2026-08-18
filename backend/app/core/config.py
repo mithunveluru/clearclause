@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     # Needs the matching tesseract-ocr-<lang> package; blank disables the retry.
     OCR_FALLBACK_LANGS: str = "eng+tam"
     OTEL_EXPORTER_OTLP_ENDPOINT: str = ""
+    # Unhandled exceptions go here. Blank disables reporting entirely.
+    SENTRY_DSN: str = ""
     MAX_UPLOAD_MB: int = 10
     MAX_PDF_PAGES: int = 50   # a 10MB PDF can hold thousands of pages; OCR memory scales with them
     FILE_RETENTION_DAYS: int = 7

@@ -4,6 +4,12 @@ global:
 rule_files:
   - /etc/prometheus/alerts.yml
 
+# Without this block the rules above fire into the Prometheus UI and nowhere else
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
 scrape_configs:
   # OTel Collector's Prometheus exporter (app + worker OTLP metrics)
   - job_name: otel-collector

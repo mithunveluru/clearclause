@@ -1,15 +1,23 @@
-"""OpenTelemetry wiring. Everything is a no-op unless OTEL_EXPORTER_OTLP_ENDPOINT
-is set, so the app runs identically with or without the observability stack.
+"""OpenTelemetry and Sentry wiring. Everything is a no-op unless its endpoint is
+configured, so the app runs identically with or without either.
 
 Traces + logs go OTLP -> Collector -> Tempo/Loki. HTTP metrics are exposed on
 /metrics by prometheus-fastapi-instrumentator (wired in main.py) and scraped by
 Prometheus directly, independent of this module.
+
+Sentry is separate from all of that because it answers a different question: traces
+say where the time went, Sentry says what broke and hands over the stack trace that
+explains it. It is also the only piece here that reaches a person without the
+optional observability stack running.
 """
 import logging
 
 from app.core.config import settings
 
+logger = logging.getLogger(__name__)
+
 _INITIALIZED = False
+_SENTRY_INITIALIZED = False
 
 
 def _enabled() -> bool:
@@ -17,6 +25,8 @@ def _enabled() -> bool:
 
 
 def setup_telemetry(service_name: str) -> None:
+    # Before the OTel guard: Sentry is useful on its own, and usually deployed alone
+    _setup_sentry(service_name)
     global _INITIALIZED
     if _INITIALIZED or not _enabled():
         return
@@ -114,3 +124,27 @@ def get_meter(name: str = "clearclause"):
     from opentelemetry import metrics
 
     return metrics.get_meter(name)
+
+
+def _setup_sentry(service_name: str) -> None:
+    """Report unhandled exceptions to Sentry, if a DSN is configured.
+
+    send_default_pii stays off: this app handles loan agreements and property deeds,
+    and an error report is not a place any of that should turn up. Traces are left to
+    Tempo rather than paid for twice.
+    """
+    global _SENTRY_INITIALIZED
+    if _SENTRY_INITIALIZED or not settings.SENTRY_DSN:
+        return
+    import sentry_sdk
+
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        environment=settings.ENV,
+        send_default_pii=False,
+        traces_sample_rate=0.0,
+    )
+    # The API and the worker fail in different ways; the tag is what separates them
+    sentry_sdk.set_tag("service", service_name)
+    _SENTRY_INITIALIZED = True
+    logger.info("sentry error reporting enabled for %s", service_name)
