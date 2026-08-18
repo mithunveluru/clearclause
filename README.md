@@ -416,8 +416,14 @@ Implemented:
   by a dedicated authorization test suite.
 - **Rate limiting.** Fixed-window Redis limiter keyed on the real client IP (honoring
   `X-Forwarded-For` only up to `TRUSTED_PROXY_DEPTH` hops): register 5/min, login 10/min, refresh
-  5/min, upload 30/min, Q&A 20/min. This path **fails open** — a Redis outage must not take down
-  login — and increments a degradation counter when it does.
+  5/min, password reset 5/min, upload 30/min, analyze and reprocess 10/min, Q&A 20/min. This path
+  **fails open** — a Redis outage must not take down login — and increments a degradation counter
+  when it does.
+- **Upload quota.** `MONTHLY_UPLOAD_LIMIT` documents per account per calendar month (0 disables
+  it). The rate limiter caps how *fast* an account uploads; this caps how *much*, which is the
+  one that matters when OCR is the CPU-bound cost. Counted in Redis rather than from the
+  documents table, because retention and user deletes would otherwise let anyone clear their own
+  usage.
 - **Login lockout.** Per-account failure counting (10 failures / 15 minutes), because an IP-keyed
   limiter does nothing against credential stuffing spread across many IPs at one account.
 - **Upload validation.** Magic-byte content sniffing (the extension is never trusted), byte-size
