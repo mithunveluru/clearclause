@@ -104,6 +104,7 @@ Set on the Render service. Secrets are entered in the dashboard and never commit
 | `AWS_SECRET_ACCESS_KEY` | *(secret)* | |
 | `MAX_UPLOAD_MB` | `5` | Lowered from 10: OCR shares 512 MB with the API |
 | `MAX_PDF_PAGES` | `10` | Lowered from 50: OCR rasterizes ~26 MB per page |
+| `SENTRY_DSN` | *(secret)* | Error reporting. Blank means nothing tells you when the API raises. |
 | `AI_MODE` | `off` | See [AI layer](#5-ai-layer-optional) |
 
 ## 3. Frontend (Vercel)

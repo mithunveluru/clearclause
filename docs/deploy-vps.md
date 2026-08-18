@@ -139,16 +139,60 @@ database *first*, then the bucket, if you ever have to do both.
 
 ## 7. Monitoring
 
-- `/health` — liveness plus database connectivity. Point an uptime check at it.
+Monitoring only counts if it reaches a person who is not currently looking at a
+dashboard. Three layers do that, in descending order of how much they are worth:
+
+### Error reporting (set this up first)
+
+Set `SENTRY_DSN` in `.env.production`. Unhandled exceptions from the API and the
+worker then arrive with a stack trace, tagged by which one raised them. It is the only
+layer here that works without running the observability stack, and it is the one that
+catches the failures nobody wrote an alert rule for.
+
+`send_default_pii` is off, so usernames, cookies and request bodies stay out of the
+reports — this app handles loan agreements, and an error tracker is not somewhere any
+of that should end up. Leave `SENTRY_DSN` blank and the SDK never initializes.
+
+### Uptime
+
+Point an external check at `https://api.<your-domain>/health` every minute
+(UptimeRobot, BetterStack and Cronitor all have free tiers big enough). The route
+returns **503** if Postgres or Redis is unreachable, and its body names which one, so
+a plain status-code check is enough to page on.
+
+The check has to be external. A monitor running on the same box as the thing it
+watches goes down with it.
+
+> Note for the Render deployment: `healthCheckPath: /health` means Render now restarts
+> the service when a dependency is unreachable. That is usually what you want, but a
+> long Postgres outage will look like a restart loop rather than a steady 503.
+
+### Metrics and alert rules
+
 - `/internal/metrics` — Prometheus, behind `X-Metrics-Token: $METRICS_TOKEN`. Returns
   404 without it, so it does not advertise itself.
-- `infra/docker-compose.obs.yml` brings up Prometheus, Grafana, Loki and Tempo if you
-  want the full stack.
+- `infra/docker-compose.obs.yml` brings up Prometheus, Grafana, Loki, Tempo and
+  Alertmanager.
 
-Two log lines are worth alerting on, because both mean the system is quietly degraded
-rather than down:
+`infra/prometheus/alerts.yml` covers the states where the product returns 200s while
+doing the wrong thing — the rate limiter failing open, a spike of unreadable scans,
+analyzer runs failing, the API not being scraped at all.
 
-- `rate limiter unavailable` — Redis is gone; requests are being allowed through
-  **unlimited**. Brute-force protection is off until it returns.
-- `low OCR confidence` — a document was too poor to read reliably. The user is warned
-  in the UI, but a spike means something upstream is wrong.
+**Those rules deliver nothing until you edit `infra/alertmanager/alertmanager.yml`.**
+It ships with placeholder addresses and credentials; fill in the SMTP account (the
+same one the app sends password resets through works) and the address to notify.
+Verify it with:
+
+```bash
+docker compose -f docker-compose.yml -f infra/docker-compose.obs.yml \
+  exec alertmanager amtool check-config /etc/alertmanager/alertmanager.yml
+```
+
+Then confirm delivery end to end by firing a fake alert — an alert path you have never
+seen work is not a monitored system:
+
+```bash
+docker compose -f docker-compose.yml -f infra/docker-compose.obs.yml \
+  exec alertmanager amtool alert add test severity=page \
+  --alertmanager.url=http://localhost:9093
+```
