@@ -196,3 +196,36 @@ docker compose -f docker-compose.yml -f infra/docker-compose.obs.yml \
   exec alertmanager amtool alert add test severity=page \
   --alertmanager.url=http://localhost:9093
 ```
+
+## 8. Before you accept a real user
+
+Everything above gets the service running. These are the things that are *not*
+verifiable by any test in this repo, because they are facts about you rather than
+properties of the code — and all of them are visible to the person who has just handed
+you their loan agreement.
+
+**Legal identity.** `frontend/lib/legal.ts` is the only file to edit; the pages import
+from it and `lib/legal.test.ts` fails if one ever hardcodes an address again.
+
+- [ ] `ENTITY.name` — the name on the certificate of incorporation, not the product
+      name. It is published as the Data Fiduciary.
+- [ ] `CONTACT.*` — four real, monitored inboxes. `usesPlaceholderContacts()` returns
+      true while any still ends in `clearclause.demo`.
+- [ ] `GRIEVANCE_OFFICER` — the DPDP Act requires publishing this. The privacy page
+      hides the section while the name is empty, so an unappointed officer is absent
+      rather than invented. Filling in the name is what publishes it.
+
+**Operational.**
+
+- [ ] `SENTRY_DSN` set, and one deliberate exception confirmed to arrive.
+- [ ] `infra/alertmanager/alertmanager.yml` filled in, and a test alert delivered
+      end to end (§7). An alert path you have never seen work is not monitoring.
+- [ ] An external uptime check against `/health`, from somewhere that is not this box.
+- [ ] `SMTP_*` set, and a password reset actually completed against a real inbox.
+- [ ] A database restore rehearsed (§6), not merely a dump taken.
+
+**Accuracy.** `backend/tests/fixtures/ocr_corpus/` is empty, so
+`scripts/ocr_accuracy.py` currently measures nothing. Add 20–30 real documents with
+hand-checked transcripts, across all six analyzer types, and record the resulting word
+error rate before making any accuracy claim in public. The in-repo tests measure
+rendered text, which is a floor: they catch a broken engine, not a bad scan.
