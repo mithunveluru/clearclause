@@ -103,3 +103,38 @@ def test_a_fee_the_block_never_names_still_reads_the_block():
         [],
     )
     assert (cost["processing_fee"], cost["processing_fee_unit"]) == (750.0, INR)
+
+
+# A fee table OCRs as one unpunctuated run: no full stop anywhere to split on, so the
+# sentence splitter hands the whole line to every fee and the first rupee figure in it
+# wins. Here that figure belongs to the late payment charge, and it was being reported
+# as the foreclosure charge too — off by two orders of magnitude and in the wrong unit.
+FEE_TABLE = (
+    "Processing fee 2 percent of loan amount Late payment charge Rs. 750 per month "
+    "Foreclosure charge 4 percent of outstanding principal"
+)
+
+
+def test_each_fee_is_read_from_its_own_span_when_there_are_no_sentences():
+    findings = [
+        {"issue_type": t, "severity": "high", "clause_text": FEE_TABLE}
+        for t in ("processing_fee", "late_fee", "foreclosure_charge")
+    ]
+
+    cost = estimate_cost(findings, [FEE_TABLE])
+
+    assert (cost["processing_fee"], cost["processing_fee_unit"]) == (2.0, PERCENT)
+    assert (cost["late_fee"], cost["late_fee_unit"]) == (750.0, INR)
+    assert (cost["foreclosure_charge"], cost["foreclosure_charge_unit"]) == (4.0, PERCENT)
+    assert cost["estimated_true_cost"] == 750.0
+
+
+def test_a_fee_named_twice_keeps_its_own_amount():
+    # Clipping at this fee's *own* second mention would cut the sentence before the
+    # figure and report the late fee as having no amount at all.
+    cost = estimate_cost(
+        [{"issue_type": "late_fee", "severity": "high",
+          "clause_text": "Late payment: overdue amounts attract Rs. 500 per month."}],
+        [],
+    )
+    assert (cost["late_fee"], cost["late_fee_unit"]) == (500.0, INR)
