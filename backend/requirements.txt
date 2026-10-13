@@ -1,6 +1,6 @@
 # Web / API
 fastapi==0.115.6
-uvicorn[standard]==0.34.0
+uvicorn[standard]==0.51.0
 python-multipart==0.0.20
 
 # Config / validation
