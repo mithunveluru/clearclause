@@ -9,6 +9,10 @@ and the report used to print the bare figure and hope the reader guessed right.
 """
 import re
 
+# One splitter for the whole codebase: this module had its own, which split "Rs. 500"
+# and discarded the very amount it was looking for.
+from app.segmentation.segmenter import split_sentences
+
 INR = "inr"
 PERCENT = "percent"
 
@@ -38,9 +42,6 @@ _PHRASES_FOR_FIELD = {
     "foreclosure_charge": ("foreclos", "prepay", "pre-pay", "pre-clos", "early clos"),
 }
 
-# Clause blocks arrive holding several sentences; split before reading an amount
-_SENTENCE = re.compile(r"(?<=[.;])\s+|\n+")
-
 _CUR = re.compile(r"(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d+)?)|([\d,]+(?:\.\d+)?)\s*(?:rupees|rs\b)", re.I)
 _PCT = re.compile(r"(\d+(?:\.\d+)?)\s*(?:%|percent|per\s*cent)", re.I)
 _RATE = re.compile(
@@ -60,6 +61,37 @@ def _amount(text: str) -> tuple[float | None, str | None]:
     return None, None
 
 
+# Which fee each phrase names. Fee tables arrive as one unpunctuated run of text
+# ("Processing fee 2 percent Late payment charge Rs. 750 Foreclosure charge 4 percent"),
+# and there is no sentence boundary in them to find — the only boundary the document
+# offers is the point where it starts naming the next fee.
+_FIELD_FOR_PHRASE = {
+    phrase: field for field, phrases in _PHRASES_FOR_FIELD.items() for phrase in phrases
+}
+
+
+def _clip_at_the_next_fee(sentence: str, field: str) -> str:
+    """The span of this sentence that belongs to `field` and to no fee after it.
+
+    Clipping only at *another* fee's wording, never at this fee's own: "Late payment:
+    overdue amounts attract Rs. 500" names late_fee twice, and cutting at the second
+    would throw away the amount.
+
+    ponytail: first-occurrence scan, no overlap handling. A sentence that names fee A,
+    then fee B, then returns to A's amount reads as having no amount rather than the
+    wrong one — the safe direction for a figure that gets printed as money. Upgrade to
+    per-phrase spans if real documents turn out to interleave.
+    """
+    low = sentence.lower()
+    start = min((low.find(p) for p in _PHRASES_FOR_FIELD[field] if p in low), default=0)
+    later = [
+        i
+        for phrase, owner in _FIELD_FOR_PHRASE.items()
+        if owner != field and (i := low.find(phrase, start + 1)) != -1
+    ]
+    return sentence[start : min(later)] if later else sentence[start:]
+
+
 def _sentence_for(text: str, field: str) -> str:
     """The sentence stating this fee, falling back to the whole block if none names it.
 
@@ -69,10 +101,10 @@ def _sentence_for(text: str, field: str) -> str:
     amount three sentences later belonged to the late payment charge.
     """
     phrases = _PHRASES_FOR_FIELD.get(field, ())
-    for sentence in _SENTENCE.split(text):
+    for sentence in split_sentences(text):
         lowered = sentence.lower()
         if any(phrase in lowered for phrase in phrases):
-            return sentence
+            return _clip_at_the_next_fee(sentence, field)
     return text
 
 
