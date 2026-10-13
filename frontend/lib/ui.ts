@@ -9,21 +9,21 @@ export type SeverityKey = "critical" | "high" | "medium" | "low";
  * runtime, since Tailwind cannot build a class name from a variable.
  *
  * WCAG-checked. Each colour as text on its own tint:
- *   critical 7.49 · high 5.91 · medium 4.73 · low 4.79   (4.5 required)
- * and on both page backgrounds (canvas #fafbff, surface #ffffff): 4.85 or better.
+ *   critical 7.20 · high 5.61 · medium 5.21 · low 5.52   (4.5 required)
+ * and on both page backgrounds (canvas #faf9f6, surface #ffffff): 5.62 or better.
  */
 export const RISK: Record<SeverityKey, { label: string; color: string; tint: string }> = {
-  critical: { label: "Critical", color: "#991b1b", tint: "#fef0f0" },
-  high: { label: "High", color: "#b91c1c", tint: "#fef2f2" },
-  medium: { label: "Medium", color: "#b45309", tint: "#fff7ed" },
-  low: { label: "Low", color: "#15803d", tint: "#f0fdf4" },
+  critical: { label: "Critical", color: "#8f2a22", tint: "#f8ece9" },
+  high: { label: "High", color: "#a8392e", tint: "#f9eeea" },
+  medium: { label: "Medium", color: "#8a5a12", tint: "#f7f0e2" },
+  low: { label: "Low", color: "#3f6b3a", tint: "#eef3ea" },
 };
 
-/** The single accent. 6.29:1 on white. */
-export const BRAND = "#4f46e5";
+/** Forest green, the single interactive accent. 6.69:1 on white. */
+export const BRAND = "#4f6149";
 
-/** For categories that carry no risk signal. Same value as the `ink-3` token (5.4:1). */
-export const NEUTRAL = "#5b6b80";
+/** For categories that carry no risk signal. Same value as the `ink-3` token (5.1:1). */
+export const NEUTRAL = "#6b6f68";
 
 /** Score bands are the severity scale under other names — derived, not restated. */
 const BAND_SEVERITY: Record<string, SeverityKey> = {

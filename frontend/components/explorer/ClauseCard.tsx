@@ -86,9 +86,12 @@ function Evidence({
             transition={{ duration: 0.22, ease: easeSmooth }}
             className="overflow-hidden"
           >
-            <blockquote className="mt-2.5 border-l-2 border-brand/30 bg-brand/[0.03] px-4 py-3 text-[0.875rem] italic leading-relaxed text-ink-2">
-              {quote}
-            </blockquote>
+            <figure className="mt-2.5 border-l-2 border-ochre bg-[#fdfcfa] px-4 py-3">
+              <figcaption className="text-[0.6875rem] font-medium uppercase tracking-[0.12em] text-ink-3">
+                From the document{page != null ? ` · page ${page}` : ""}
+              </figcaption>
+              <blockquote className="mt-1.5 font-serif text-[0.9375rem] leading-relaxed text-ink">{quote}</blockquote>
+            </figure>
           </m.div>
         )}
       </AnimatePresence>
@@ -116,7 +119,7 @@ export function ClauseCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: Math.min(index * 0.06, 0.3), ease: easeSmooth }}
-      className="rounded-2xl border border-line bg-surface p-6 shadow-xs"
+      className="rounded-xl border border-line bg-surface p-6 shadow-xs"
     >
       <div className="mb-4 flex flex-wrap items-center gap-2.5">
         <span
@@ -132,7 +135,7 @@ export function ClauseCard({
         </span>
         <span className="ml-auto flex items-center gap-1.5">
           <span className="t-caption">{Math.round(clause.confidence * 100)}%</span>
-          <span className="w-14 h-1.5 rounded-full bg-canvas overflow-hidden" title={`${Math.round(clause.confidence * 100)}% confidence`}>
+          <span className="w-14 h-1.5 rounded-full bg-sunken/60 overflow-hidden" title={`${Math.round(clause.confidence * 100)}% confidence`}>
             <span
               className="block h-full rounded-full"
               style={{
@@ -165,7 +168,7 @@ export function ClauseCard({
 
       {mode === "negotiation" ? (
         <>
-          <div className="mb-3 rounded-xl border border-line bg-canvas px-4 py-3">
+          <div className="mb-3 rounded-xl border border-line bg-sunken/60 px-4 py-3">
             <p className="mb-1 flex items-center gap-1 text-[0.6875rem] font-medium uppercase tracking-wider text-ink-3">
               <MessageSquare className="h-3 w-3" />
               What to ask
@@ -187,7 +190,7 @@ export function ClauseCard({
           )}
         </>
       ) : (
-        <div className="mt-4 rounded-xl border border-line bg-canvas px-4 py-3">
+        <div className="mt-4 rounded-xl border border-line bg-sunken/60 px-4 py-3">
           <p className="mb-1 text-[0.6875rem] font-medium uppercase tracking-wider text-ink-3">
             Recommended action
           </p>

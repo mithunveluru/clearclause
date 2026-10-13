@@ -1,20 +1,22 @@
 "use client";
 import { AnimatePresence, m } from "framer-motion";
-import { AlertTriangle, ArrowLeft, CheckCircle, Compass, FileText, Lock, Search } from "lucide-react";
-import Link from "next/link";
+import { AlertTriangle, CheckCircle, Compass, FileText, Lock, RotateCcw, Search } from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
   documentFileUrl,
   getAiSummary,
+  getClassification,
   getDocument,
   getExplorer,
   type AISummary,
+  type Classification,
   type Doc,
   type ExplorerDoc,
 } from "@/lib/api";
 import { AISummaryPanel } from "@/components/AISummaryPanel";
 import { AnalysisProgress } from "@/components/AnalysisProgress";
+import { AppShell } from "@/components/AppShell";
 import { DocTypeBadge } from "@/components/DocTypeBadge";
 import DownloadReportButton from "@/components/DownloadReportButton";
 import { type ReadingMode } from "@/components/explorer/ClauseCard";
@@ -28,8 +30,8 @@ import { SectionView } from "@/components/explorer/SectionView";
 import { TimelineView } from "@/components/explorer/TimelineView";
 import { viewTransition, easeSmooth } from "@/components/ui/motion";
 import { searchExplorer } from "@/lib/search";
-import { Container, Surface } from "@/components/ui/Surface";
-import { TopBar } from "@/components/ui/TopBar";
+import { Button, ButtonLink } from "@/components/ui/Button";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 // Q&A lags report_ready by the embed stage
 const fullyReady = (d: Doc) =>
@@ -47,6 +49,9 @@ export default function DocumentDetail() {
   const [doc, setDoc] = useState<Doc | null>(null);
   const [explorer, setExplorer] = useState<ExplorerDoc | null>(null);
   const [aiSummary, setAiSummary] = useState<AISummary | null>(null);
+  const [classification, setClassification] = useState<Classification | null>(null);
+  const [loadErr, setLoadErr] = useState("");
+  const [explorerFailed, setExplorerFailed] = useState(false);
   const [mode, setMode] = useState<ReadingMode>("consumer");
   const [walkthrough, setWalkthrough] = useState(false);
   // Transient, not a navigable location
@@ -64,8 +69,10 @@ export default function DocumentDetail() {
   );
 
   const loadExplorer = useCallback(async () => {
+    setExplorerFailed(false);
     const e = await getExplorer(docId);
     if (e) setExplorer(e);
+    else setExplorerFailed(true);
   }, [docId]);
 
   // Only produced when AI_MODE is summary_only or full
@@ -80,12 +87,17 @@ export default function DocumentDetail() {
   }, [doc?.original_filename]);
 
   useEffect(() => {
-    getDocument(docId).then(setDoc).catch(() => router.push("/dashboard"));
-  }, [router, docId]);
+    getDocument(docId).then(setDoc).catch((e) => setLoadErr((e as Error).message));
+  }, [docId]);
 
   useEffect(() => {
     if (doc?.status === "report_ready" && !explorer) loadExplorer();
   }, [doc?.status, explorer, loadExplorer]);
+
+  // Weak classifier signal is surfaced, not presented as fact
+  useEffect(() => {
+    if (doc?.classified_type && !classification) getClassification(docId).then(setClassification);
+  }, [doc?.classified_type, classification, docId]);
 
   useEffect(() => {
     if (!doc || fullyReady(doc)) return;
@@ -106,46 +118,78 @@ export default function DocumentDetail() {
     return () => clearTimeout(id);
   }, [doc?.status, doc?.qa_ready, docId]);
 
+  const crumbs = [{ label: "Documents", href: "/dashboard" }, { label: doc?.original_filename ?? "Document" }];
+
   if (!doc) {
     return (
-      <>
-        <TopBar />
-        <Container className="py-24 text-center"><p className="t-body">Loading…</p></Container>
-      </>
+      <AppShell focus crumbs={crumbs}>
+        {loadErr ? (
+          <div className="mx-auto max-w-md px-6 py-24 text-center">
+            <h1 className="text-[1.25rem] font-semibold tracking-tight">This document isn&rsquo;t available</h1>
+            <p className="mt-2 text-[0.9375rem] text-ink-2">
+              It may have been deleted, or removed after the seven-day retention period. ({loadErr})
+            </p>
+            <ButtonLink href="/dashboard" variant="secondary" className="mt-6">Back to documents</ButtonLink>
+          </div>
+        ) : (
+          <div className="mx-auto max-w-3xl space-y-4 px-6 py-12" aria-busy="true" aria-label="Loading document">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-7 w-2/3" />
+            <Skeleton className="mt-8 h-40 w-full" />
+          </div>
+        )}
+      </AppShell>
     );
   }
 
   const ready = doc.status === "report_ready";
+  const uncertainType = classification && classification.routing_action !== "auto";
+  const typeBadge = doc.classified_type && (
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <DocTypeBadge type={doc.classified_type} />
+      {uncertainType && (
+        <span className="text-[0.75rem] text-ink-3" title="The document's wording only weakly matched this type">
+          Type identified with low confidence
+        </span>
+      )}
+    </span>
+  );
 
   return (
-    <>
-      <TopBar
-        right={
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-1.5 text-[0.875rem] font-medium text-ink-2 hover:text-ink"
-          >
-            <ArrowLeft className="h-4 w-4" strokeWidth={1.75} />
-            Workspace
-          </Link>
-        }
-      />
-
+    <AppShell
+      focus
+      crumbs={crumbs}
+      actions={
+        ready && (
+          <>
+            <a
+              href={documentFileUrl(docId)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-10 items-center gap-2 rounded-lg px-3 text-[0.875rem] font-medium text-ink-2 transition hover:bg-sunken hover:text-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/25"
+            >
+              <FileText className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+              <span className="hidden sm:inline">Original</span>
+              <span className="sr-only"> document (opens in a new tab)</span>
+            </a>
+            <DownloadReportButton docId={docId} />
+          </>
+        )
+      }
+    >
       {!ready && (
-        <Container className="py-12">
-          <div className="flex items-center gap-3">
-            <p className="eyebrow">Document review</p>
-            {doc.classified_type && <DocTypeBadge type={doc.classified_type} />}
-          </div>
-          <h1 className="t-headline mt-2.5 break-words">{doc.original_filename}</h1>
-          <Surface className="mt-10 max-w-xl px-8 py-9">
-            <h2 className="t-section mb-1">
+        <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-14">
+          <p className="eyebrow">Document review</p>
+          <h1 className="mt-2 break-words text-[1.5rem] font-semibold tracking-tight">{doc.original_filename}</h1>
+          {typeBadge && <div className="mt-3">{typeBadge}</div>}
+          <div className="mt-8 rounded-xl border border-line bg-surface px-6 py-7 sm:px-8">
+            <h2 className="text-[1rem] font-semibold tracking-tight" aria-live="polite">
               {doc.status === "failed" ? "Analysis stopped" : "Analyzing your document"}
             </h2>
-            <p className="t-caption mb-7">
+            <p className="mb-7 mt-1 text-[0.875rem] text-ink-3">
               {doc.status === "failed"
                 ? "Nothing was saved from this run."
-                : "This usually takes a few seconds. You don’t need to do anything."}
+                : "This page updates as each step finishes. You can leave and come back."}
             </p>
             <AnalysisProgress
               docId={docId}
@@ -153,11 +197,11 @@ export default function DocumentDetail() {
               onRetried={() => setDoc((d) => (d ? { ...d, status: "uploaded" } : d))}
             />
             <p className="mt-8 flex items-center gap-1.5 text-[0.75rem] text-ink-3">
-              <Lock className="h-3 w-3" strokeWidth={2} />
-              Processed privately · only the extracted text is analyzed
+              <Lock className="h-3 w-3" strokeWidth={2} aria-hidden />
+              Only the extracted text is analyzed · deleted after seven days
             </p>
-          </Surface>
-        </Container>
+          </div>
+        </div>
       )}
 
       {ready && explorer && (
@@ -165,10 +209,10 @@ export default function DocumentDetail() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4, ease: easeSmooth }}
-          className="flex min-h-[calc(100vh-64px)]"
+          className="flex min-h-[calc(100vh-56px)]"
         >
-          <aside className="hidden w-64 shrink-0 border-r border-line bg-surface lg:block xl:w-72">
-            <div className="sticky top-16 max-h-[calc(100vh-64px)] overflow-y-auto px-4">
+          <aside className="hidden w-64 shrink-0 border-r border-line bg-canvas lg:block xl:w-72">
+            <div className="sticky top-14 max-h-[calc(100vh-56px)] overflow-y-auto px-4">
               <ExplorerNav
                 explorer={explorer}
                 active={active}
@@ -182,35 +226,19 @@ export default function DocumentDetail() {
             </div>
           </aside>
 
-          <main className="flex-1 min-w-0">
-            <div className="sticky top-16 z-20 border-b border-line bg-surface/95 backdrop-blur-md">
-              <div className="px-6 py-3.5 flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  {/* The document's own title. Without it the loaded explorer had no h1 and
-                      every view opened at h2, so heading navigation started mid-hierarchy. */}
-                  <h1 className="truncate font-semibold text-[0.9375rem] leading-snug">
-                    {doc.original_filename}
-                  </h1>
-                  {doc.classified_type && (
-                    <DocTypeBadge type={doc.classified_type} />
-                  )}
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <a
-                    href={documentFileUrl(docId)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex h-10 items-center gap-2 rounded-[10px] px-3 text-[0.875rem] font-medium text-ink-2 transition hover:bg-brand/[0.06] hover:text-brand focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/25"
-                  >
-                    <FileText className="h-4 w-4" strokeWidth={1.75} aria-hidden />
-                    Original
-                    <span className="sr-only"> document (opens in a new tab)</span>
-                  </a>
-                  <DownloadReportButton docId={docId} />
-                </div>
+          <div className="min-w-0 flex-1">
+            <div className="border-b border-line bg-surface">
+              <div className="mx-auto max-w-3xl px-4 pb-4 pt-6 sm:px-6">
+                {/* The document's own title. Without it the loaded explorer had no h1 and
+                    every view opened at h2, so heading navigation started mid-hierarchy. */}
+                <h1 className="break-words text-[1.25rem] font-semibold leading-snug tracking-tight">
+                  {doc.original_filename}
+                </h1>
+                {typeBadge && <div className="mt-2">{typeBadge}</div>}
               </div>
+            </div>
 
-              <MobileNav
+            <MobileNav
                 explorer={explorer}
                 active={active}
                 onSelect={setActive}
@@ -220,9 +248,8 @@ export default function DocumentDetail() {
                 query={query}
                 onQuery={setQuery}
               />
-            </div>
 
-            <div className="mx-auto max-w-3xl px-6 py-10">
+            <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
               {isLowConfidenceScan(doc) && (
                 <div
                   role="status"
@@ -266,14 +293,24 @@ export default function DocumentDetail() {
                 )}
               </AnimatePresence>
             </div>
-          </main>
+          </div>
         </m.div>
       )}
 
       {ready && !explorer && (
-        <Container className="py-24 text-center">
-          <p className="t-body text-ink-3">Building explorer…</p>
-        </Container>
+        <div className="mx-auto max-w-md px-6 py-24 text-center">
+          {explorerFailed ? (
+            <>
+              <p className="text-[0.9375rem] font-medium">The findings couldn&rsquo;t be loaded</p>
+              <p className="mt-1 text-[0.875rem] text-ink-2">The analysis finished, but loading its results failed.</p>
+              <Button variant="secondary" className="mt-5" onClick={loadExplorer}>
+                <RotateCcw className="h-4 w-4" strokeWidth={1.75} aria-hidden /> Try again
+              </Button>
+            </>
+          ) : (
+            <p className="text-[0.9375rem] text-ink-3" role="status">Loading findings…</p>
+          )}
+        </div>
       )}
 
       <AnimatePresence>
@@ -285,7 +322,7 @@ export default function DocumentDetail() {
           />
         )}
       </AnimatePresence>
-    </>
+    </AppShell>
   );
 }
 
@@ -378,7 +415,7 @@ function MobileNav({
   ];
 
   return (
-    <div className="lg:hidden px-4 pb-2.5">
+    <div className="sticky top-14 z-10 border-b border-line bg-canvas/95 px-4 py-2.5 backdrop-blur-md lg:hidden">
       <div className="relative mb-2">
         <Search
           className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3"
@@ -405,8 +442,8 @@ function MobileNav({
             onClick={() => onSelect(id)}
             className={`shrink-0 rounded-lg px-3 py-1.5 text-[0.8125rem] font-medium transition whitespace-nowrap ${
               active === id
-                ? "bg-brand text-white"
-                : "bg-canvas text-ink-2 hover:text-ink"
+                ? "bg-ink text-white"
+                : "bg-sunken text-ink-2 hover:text-ink"
             }`}
           >
             {label}

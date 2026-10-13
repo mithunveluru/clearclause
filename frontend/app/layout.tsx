@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Newsreader } from "next/font/google";
 import { MotionProvider } from "@/components/ui/MotionProvider";
 import "./globals.css";
 
@@ -9,17 +9,23 @@ const inter = Inter({
   display: "swap",
 });
 
+const serif = Newsreader({
+  subsets: ["latin"],
+  variable: "--font-serif",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "ClearClause — Understand what you're agreeing to",
+  title: "ClearClause — Understand the details that matter",
   description:
-    "ClearClause reviews loan agreements and subscription terms for hidden fees, penalties, and auto-renew traps — in plain English.",
+    "ClearClause identifies what kind of financial or property document you have, surfaces the clauses that carry risk, and shows the wording behind every finding.",
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={`${inter.variable} ${serif.variable}`}>
       <body className="min-h-screen"><MotionProvider>{children}</MotionProvider></body>
     </html>
   );

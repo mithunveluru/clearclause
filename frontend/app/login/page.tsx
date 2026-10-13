@@ -1,12 +1,16 @@
 "use client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Lock } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { login } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
-import { Logo } from "@/components/ui/Logo";
-import { PageTransition } from "@/components/ui/PageTransition";
+import { AuthShell, Field, Notice, PasswordField } from "@/components/ui/Form";
+
+function ResetNotice() {
+  // useSearchParams needs its own boundary or the route opts out of prerendering
+  const reset = useSearchParams().get("reset") === "1";
+  return reset ? <div className="mb-5"><Notice tone="success">Password updated. Sign in with your new password.</Notice></div> : null;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -24,65 +28,30 @@ export default function LoginPage() {
       router.push("/dashboard");
     } catch (e) {
       setErr((e as Error).message);
-    } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-6">
-      <PageTransition>
-        <div className="w-full max-w-sm">
-          <div className="mb-10 flex justify-center">
-            <Logo />
-          </div>
-          <h1 className="t-headline text-center">Welcome back</h1>
-          <p className="t-body mt-2 text-center text-[0.9375rem]">
-            Log in to review your documents.
-          </p>
-          <form onSubmit={submit} className="mt-9 flex flex-col gap-3">
-            <input
-              className="field"
-              type="email"
-              required
-              aria-label="Email"
-              autoComplete="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <input
-              className="field"
-              type="password"
-              required
-              aria-label="Password"
-              autoComplete="current-password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            {err && <p className="text-sm text-risk-high">{err}</p>}
-            <Button size="lg" disabled={busy} className="mt-3 w-full">
-              {busy ? "Signing in…" : "Log in"}
-            </Button>
-          </form>
-          <p className="mt-5 text-center text-[0.875rem]">
-            <Link href="/forgot-password" className="text-ink-2 hover:text-accent hover:underline">
-              Forgot your password?
-            </Link>
-          </p>
-          <p className="mt-3 text-center text-[0.875rem] text-ink-2">
-            New to ClearClause?{" "}
-            <Link href="/register" className="font-medium text-accent hover:underline">
-              Create an account
-            </Link>
-          </p>
-          <p className="mt-10 flex items-center justify-center gap-1.5 text-[0.75rem] text-ink-3">
-            <Lock className="h-3 w-3" strokeWidth={2} />
-            Encrypted in transit · your documents stay private
-          </p>
+    <AuthShell
+      title="Sign in"
+      subtitle="Continue to your documents."
+      footer={<>New to ClearClause? <Link href="/register" className="font-medium text-brand hover:underline">Create an account</Link></>}
+    >
+      <Suspense fallback={null}><ResetNotice /></Suspense>
+      <form onSubmit={submit} className="flex flex-col gap-4">
+        <Field label="Email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <div>
+          <PasswordField label="Password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <Link href="/forgot-password" className="mt-2 inline-block text-[0.8125rem] text-ink-2 hover:text-brand hover:underline">
+            Forgot your password?
+          </Link>
         </div>
-      </PageTransition>
-    </div>
+        <Notice>{err}</Notice>
+        <Button size="lg" disabled={busy} className="mt-1 w-full">
+          {busy ? "Signing in…" : "Sign in"}
+        </Button>
+      </form>
+    </AuthShell>
   );
 }

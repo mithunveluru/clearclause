@@ -23,7 +23,7 @@ export function OverviewView({
     <m.div {...viewTransition} className="space-y-6">
       {bm && (
         <div
-          className="flex items-center gap-4 rounded-2xl p-6"
+          className="flex items-center gap-4 rounded-xl p-6"
           style={{ backgroundColor: bm.tint, border: `1px solid ${bm.color}30` }}
         >
           <div>

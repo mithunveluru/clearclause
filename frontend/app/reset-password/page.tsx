@@ -4,23 +4,27 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { resetPassword } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
-import { Logo } from "@/components/ui/Logo";
-import { PageTransition } from "@/components/ui/PageTransition";
+import { AuthShell, Notice, PasswordField } from "@/components/ui/Form";
 
 const MIN_LENGTH = 8;
+
+const newLink = <Link href="/forgot-password" className="font-medium text-brand hover:underline">Request a new link</Link>;
 
 function ResetForm() {
   const router = useRouter();
   const token = useSearchParams().get("token") ?? "";
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [confirmTouched, setConfirmTouched] = useState(false);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const mismatch = confirmTouched && confirm.length > 0 && confirm !== password;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (password !== confirm) {
-      setErr("Those two passwords don't match.");
+      setConfirmTouched(true);
       return;
     }
     setErr("");
@@ -30,84 +34,49 @@ function ResetForm() {
       router.push("/login?reset=1");
     } catch (e) {
       setErr((e as Error).message);
-    } finally {
       setBusy(false);
     }
   }
 
   if (!token) {
     return (
-      <>
-        <h1 className="t-headline text-center">This link is incomplete</h1>
-        <p className="t-body mt-4 text-center text-[0.9375rem]">
-          Open the link exactly as it appears in the email, or request a new one.
-        </p>
-        <p className="mt-7 text-center text-[0.875rem] text-ink-2">
-          <Link href="/forgot-password" className="font-medium text-accent hover:underline">
-            Request a new link
-          </Link>
-        </p>
-      </>
+      <AuthShell title="This link is incomplete" subtitle="Open the link exactly as it appears in the email, or request a new one." footer={newLink}>
+        {null}
+      </AuthShell>
     );
   }
 
   return (
-    <>
-      <h1 className="t-headline text-center">Choose a new password</h1>
-      <p className="t-body mt-2 text-center text-[0.9375rem]">
-        At least {MIN_LENGTH} characters. A short phrase beats a short password.
-      </p>
-      <form onSubmit={submit} className="mt-9 flex flex-col gap-3">
-        <input
-          className="field"
-          type="password"
+    <AuthShell
+      title="Choose a new password"
+      subtitle={`At least ${MIN_LENGTH} characters. A short phrase beats a short password.`}
+      footer={newLink}
+    >
+      <form onSubmit={submit} className="flex flex-col gap-4">
+        <PasswordField label="New password" required minLength={MIN_LENGTH} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <PasswordField
+          label="Confirm new password"
           required
           minLength={MIN_LENGTH}
-          aria-label="New password"
           autoComplete="new-password"
-          placeholder="New password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <input
-          className="field"
-          type="password"
-          required
-          minLength={MIN_LENGTH}
-          aria-label="Confirm new password"
-          autoComplete="new-password"
-          placeholder="Confirm new password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
+          onBlur={() => setConfirmTouched(true)}
+          error={mismatch ? "Those two passwords don't match." : undefined}
         />
-        {err && <p className="text-sm text-risk-high">{err}</p>}
-        <Button size="lg" disabled={busy} className="mt-3 w-full">
+        <Notice>{err}</Notice>
+        <Button size="lg" disabled={busy} className="mt-1 w-full">
           {busy ? "Saving…" : "Set new password"}
         </Button>
       </form>
-      <p className="mt-7 text-center text-[0.875rem] text-ink-2">
-        <Link href="/forgot-password" className="font-medium text-accent hover:underline">
-          Request a new link
-        </Link>
-      </p>
-    </>
+    </AuthShell>
   );
 }
 
 export default function ResetPasswordPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-6">
-      <PageTransition>
-        <div className="w-full max-w-sm">
-          <div className="mb-10 flex justify-center">
-            <Logo />
-          </div>
-          {/* useSearchParams needs a boundary or the whole route opts out of prerendering */}
-          <Suspense fallback={<p className="t-body text-center">Loading…</p>}>
-            <ResetForm />
-          </Suspense>
-        </div>
-      </PageTransition>
-    </div>
+    <Suspense fallback={null}>
+      <ResetForm />
+    </Suspense>
   );
 }

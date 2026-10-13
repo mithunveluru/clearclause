@@ -44,12 +44,12 @@ export function GuidedWalkthrough({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 16 }}
         transition={{ duration: 0.35, ease: easeSmooth }}
-        className="relative z-10 w-full max-w-md rounded-3xl bg-surface p-8 shadow-2xl"
+        className="relative z-10 w-full max-w-md rounded-xl bg-surface p-8 shadow-2xl"
       >
         <button
           onClick={onClose}
           aria-label="Close walkthrough"
-          className="absolute right-5 top-5 rounded-full p-1.5 text-ink-3 hover:bg-canvas"
+          className="absolute right-5 top-5 rounded-full p-1.5 text-ink-3 hover:bg-sunken"
         >
           <X className="h-4 w-4" />
         </button>
@@ -66,7 +66,7 @@ export function GuidedWalkthrough({
         <p className="t-caption mb-1">Step {idx + 1} of {steps.length}</p>
         <h3 className="text-[1.25rem] font-semibold tracking-tight mb-2">{step.title}</h3>
         <p className="t-body text-ink-2 mb-4">{step.description}</p>
-        <div className="flex items-start gap-2.5 rounded-xl border border-line bg-canvas px-4 py-3 text-[0.875rem] leading-relaxed text-ink">
+        <div className="flex items-start gap-2.5 rounded-xl border border-line bg-sunken/60 px-4 py-3 text-[0.875rem] leading-relaxed text-ink">
           <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-brand" strokeWidth={1.75} aria-hidden />
           {step.insight}
         </div>
@@ -75,7 +75,7 @@ export function GuidedWalkthrough({
           {idx > 0 && (
             <button
               onClick={() => setIdx((i) => i - 1)}
-              className="flex items-center gap-1.5 rounded-xl border border-line px-4 py-2.5 text-[0.875rem] font-medium text-ink-2 hover:bg-canvas"
+              className="flex items-center gap-1.5 rounded-xl border border-line px-4 py-2.5 text-[0.875rem] font-medium text-ink-2 hover:bg-sunken"
             >
               <ArrowLeft className="h-3.5 w-3.5" /> Back
             </button>
