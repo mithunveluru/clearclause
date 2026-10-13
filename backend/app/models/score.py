@@ -1,4 +1,4 @@
-from sqlalchemy import Float, ForeignKey, Integer
+from sqlalchemy import Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -32,3 +32,9 @@ class CostBreakdown(Base):
     renewal_fee: Mapped[float | None] = mapped_column(Float, nullable=True)
     foreclosure_charge: Mapped[float | None] = mapped_column(Float, nullable=True)
     estimated_true_cost: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # "inr" | "percent" | NULL. NULL means the unit was never captured — rows written
+    # before this column existed, and rows where the clause stated neither.
+    processing_fee_unit: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    late_fee_unit: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    renewal_fee_unit: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    foreclosure_charge_unit: Mapped[str | None] = mapped_column(String(8), nullable=True)

@@ -28,7 +28,7 @@ def _real_ip(request: Request) -> str:
 def rate_limit(limit: int, window: int, scope: str):
     """Fixed-window Redis rate limiter keyed by real client IP.
 
-    ponytail: window-edge bursts are acceptable; swap for a token bucket if abused.
+    Window-edge bursts are accepted; use a token bucket if abused.
     """
 
     async def dependency(request: Request) -> None:

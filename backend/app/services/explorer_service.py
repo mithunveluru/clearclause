@@ -78,6 +78,20 @@ _ENTITY_TIMELINE: dict[str, tuple[str, str, str]] = {
     "termination_clause":       ("rights",      "Termination Clause",        "Conditions under which the agreement can end"),
 }
 
+def timeline_entries(entities) -> list[dict[str, str]]:
+    """The dated/periodic terms, as plain dicts. Shared with the PDF report so the two
+    surfaces cannot drift apart on which entities count as timeline events."""
+    return [
+        {
+            "label": _ENTITY_TIMELINE[e.entity_type][1],
+            "value": e.entity_value,
+            "description": _ENTITY_TIMELINE[e.entity_type][2],
+        }
+        for e in entities
+        if e.entity_type in _ENTITY_TIMELINE and e.entity_value
+    ]
+
+
 _FINANCIAL_UPFRONT = {"processing_fee", "deposit_amount"}
 _FINANCIAL_RECURRING = {"rent_amount", "interest_rate"}
 _FINANCIAL_PENALTIES = {"late_fee", "prepayment_penalty", "foreclosure_charge"}

@@ -42,7 +42,7 @@ export function LegalDoc({
                       className={`block rounded-lg px-3 py-1.5 text-[0.875rem] transition ${
                         d.href === current
                           ? "bg-brand/[0.08] font-semibold text-brand"
-                          : "text-ink-2 hover:bg-canvas hover:text-ink"
+                          : "text-ink-2 hover:bg-sunken hover:text-ink"
                       }`}
                     >
                       {d.label}

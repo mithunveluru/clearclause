@@ -77,25 +77,10 @@ implementation of a document-analysis pipeline with an auditable AI layer.
 
 - JWT auth in httpOnly cookies, with refresh-token rotation and revocation, and per-account login
   lockout.
-- OpenTelemetry traces, Prometheus metrics, Loki logs, Grafana dashboards.
+- Sentry error reporting, OpenTelemetry traces, Prometheus metrics with Alertmanager
+  routing, Loki logs, Grafana dashboards.
 - Production Compose stack with Caddy (automatic TLS), S3-compatible object storage, and a
   scaled-out worker.
-
----
-
-## Screenshots
-
-> Captures belong in `docs/screenshots/`. Placeholders below.
-
-| | |
-|---|---|
-| **Landing page** | ![Landing](docs/screenshots/landing.png) |
-| **Upload** | ![Upload](docs/screenshots/upload.png) |
-| **Document Explorer** | ![Explorer](docs/screenshots/explorer.png) |
-| **AI Q&A** | ![Q&A](docs/screenshots/qa.png) |
-| **PDF report** | ![Report](docs/screenshots/report.png) |
-| **Dashboard** | ![Dashboard](docs/screenshots/dashboard.png) |
-| **Grafana** | ![Grafana](docs/screenshots/grafana.png) |
 
 ---
 
@@ -160,7 +145,7 @@ skips, leaving the already-complete document intact.
 | Retrieval | Hybrid BM25 + vector, fused with Reciprocal Rank Fusion (implemented in-repo) |
 | Storage | Local directory (dev) or S3 / R2 / Spaces via boto3, SSE + signed URLs |
 | Reports | ReportLab |
-| Observability | OpenTelemetry, Prometheus, Loki, Tempo, Grafana |
+| Observability | Sentry, OpenTelemetry, Prometheus, Alertmanager, Loki, Tempo, Grafana |
 | Deployment | Docker Compose; Caddy reverse proxy with automatic TLS |
 | CI | GitHub Actions — ruff, pytest, tsc, ESLint, Docker build, Trivy scan |
 
@@ -204,7 +189,7 @@ frontend/
     ui/              Shared primitives
   lib/api.ts         Single REST client for the backend
 
-infra/               Observability stack (OTel Collector, Prometheus, Loki, Tempo, Grafana)
+infra/               Observability stack (OTel Collector, Prometheus, Alertmanager, Loki, Tempo, Grafana)
 deploy/Caddyfile     Production reverse proxy / TLS
 sample-data/         10 sample documents used by the seed script and E2E tests
 docs/                Demo walkthrough and deployment guide
@@ -236,8 +221,9 @@ docker compose exec backend alembic upgrade head
 docker compose exec backend python scripts/seed.py   # optional: demo user + sample documents
 ```
 
-The seed script creates **demo@example.com / supersecret1** and uploads the documents in
-`sample-data/`.
+The seed script creates a local demo account (`demo@example.com` / `supersecret1`, override
+with `SEED_EMAIL` / `SEED_PASSWORD`) and uploads the documents in `sample-data/`. It is a
+development convenience and has no effect on a deployed instance.
 
 ### Services
 
@@ -273,7 +259,8 @@ an AI summary and an "ask about this document" panel with source citations.
 docker compose -f docker-compose.yml -f infra/docker-compose.obs.yml up --build
 ```
 
-Grafana at http://localhost:3001, Prometheus at http://localhost:9090.
+Grafana at http://localhost:3001, Prometheus at http://localhost:9090, Alertmanager at
+http://localhost:9093.
 
 ### Tests and lint
 
@@ -308,7 +295,13 @@ With `ENV=production`, the application **refuses to start** unless `JWT_SECRET` 
 from its default, `COOKIE_SECURE=true`, and all CORS origins are `https://`. The check lives in
 settings validation, so it covers the API, the worker, and Alembic alike.
 
-See [docs/DEPLOY.md](docs/DEPLOY.md) for the full procedure.
+See [docs/deploy-vps.md](docs/deploy-vps.md) for the full procedure.
+
+### Hosted (Vercel + Render)
+
+[docs/deploy-render.md](docs/deploy-render.md) covers a managed deploy — Next.js on Vercel, the API and
+worker on Render, documents in Cloudflare R2 — including the free tier's real limits (spin-down,
+512 MB shared between the API and the worker, and a Postgres instance that expires after 30 days).
 
 ---
 
@@ -423,8 +416,14 @@ Implemented:
   by a dedicated authorization test suite.
 - **Rate limiting.** Fixed-window Redis limiter keyed on the real client IP (honoring
   `X-Forwarded-For` only up to `TRUSTED_PROXY_DEPTH` hops): register 5/min, login 10/min, refresh
-  5/min, upload 30/min, Q&A 20/min. This path **fails open** — a Redis outage must not take down
-  login — and increments a degradation counter when it does.
+  5/min, password reset 5/min, upload 30/min, analyze and reprocess 10/min, Q&A 20/min. This path
+  **fails open** — a Redis outage must not take down login — and increments a degradation counter
+  when it does.
+- **Upload quota.** `MONTHLY_UPLOAD_LIMIT` documents per account per calendar month (0 disables
+  it). The rate limiter caps how *fast* an account uploads; this caps how *much*, which is the
+  one that matters when OCR is the CPU-bound cost. Counted in Redis rather than from the
+  documents table, because retention and user deletes would otherwise let anyone clear their own
+  usage.
 - **Login lockout.** Per-account failure counting (10 failures / 15 minutes), because an IP-keyed
   limiter does nothing against credential stuffing spread across many IPs at one account.
 - **Upload validation.** Magic-byte content sniffing (the extension is never trusted), byte-size

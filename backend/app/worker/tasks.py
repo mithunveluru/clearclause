@@ -1,11 +1,12 @@
 import asyncio
 import os
+import smtplib
 from datetime import datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.core import storage
+from app.core import email, storage
 from app.core.config import settings
 from app.models.document import Document
 from app.models.report import Report
@@ -16,7 +17,7 @@ from app.worker.celery_app import celery_app
 def _sweep_local_orphans(keep: set[str], store: storage.Storage) -> int:
     """Delete unreferenced files the local backend left behind.
 
-    ponytail: local only; on S3 this is a lifecycle rule's job.
+    Local backend only; on S3 a lifecycle rule does this.
     """
     if not isinstance(store, storage.LocalStorage):
         return 0
@@ -68,3 +69,18 @@ async def _cleanup() -> dict:
 def cleanup_stale_files() -> dict:
     """Delete documents past retention and sweep unreferenced local files."""
     return asyncio.run(_cleanup())
+
+
+@celery_app.task(
+    name="send_email",
+    autoretry_for=(OSError, smtplib.SMTPException),
+    retry_backoff=True,
+    max_retries=3,
+)
+def send_email(to: str, subject: str, body: str) -> None:
+    """Deliver one transactional email.
+
+    Queued rather than sent inline: an SMTP handshake against a third party must
+    not block an API worker, and a reset mail that arrives a second late is fine.
+    """
+    email.send(to, subject, body)

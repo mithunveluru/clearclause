@@ -50,6 +50,7 @@ async def _signup(client: AsyncClient) -> dict[str, str]:
 # (method, path suffix, json body) for every document-scoped route.
 ROUTES = [
     ("GET", "", None),
+    ("GET", "/file", None),
     ("DELETE", "", None),
     ("POST", "/analyze", None),
     ("POST", "/reprocess", None),

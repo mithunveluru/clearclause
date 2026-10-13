@@ -197,7 +197,7 @@ def report_task(self, document_id: int, user_id: int) -> None:
     async def work(db: AsyncSession) -> None:
         await ReportService(
             DocumentRepository(db), ClauseRepository(db), FindingRepository(db),
-            ScoreRepository(db), ReportRepository(db),
+            ScoreRepository(db), ReportRepository(db), entities=EntityRepository(db),
         ).process(document_id, user_id)
 
     asyncio.run(_run_stage(document_id, "report", work, status_after=DocStatus.REPORT_READY))

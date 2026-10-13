@@ -6,6 +6,7 @@ from app.repositories.block_repo import ExtractedBlockRepository
 from app.repositories.classification_repo import ClassificationRepository
 from app.repositories.clause_repo import ClauseRepository
 from app.repositories.document_repo import DocumentRepository
+from app.repositories.entity_repo import EntityRepository
 from app.repositories.finding_repo import FindingRepository
 from app.repositories.report_repo import ReportRepository
 from app.repositories.score_repo import ScoreRepository
@@ -67,6 +68,7 @@ class AnalysisService:
                     FindingRepository(self.db),
                     ScoreRepository(self.db),
                     ReportRepository(self.db),
+                    entities=EntityRepository(self.db),
                 ).process(document_id, user_id)
             await self.docs.update_status(document_id, DocStatus.REPORT_READY)
             return DocStatus.REPORT_READY

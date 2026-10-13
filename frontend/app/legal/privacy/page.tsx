@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalDoc } from "@/components/legal/LegalDoc";
+import { CONTACT, ENTITY, GRIEVANCE_OFFICER } from "@/lib/legal";
+import { MailLink } from "@/components/legal/MailLink";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — ClearClause",
@@ -172,11 +174,10 @@ export default function PrivacyPolicy() {
                 automatic seven-day deletion handle it.
               </li>
               <li>
-                <strong>Your account:</strong> email{" "}
-                <a href="mailto:privacy@clearclause.demo">privacy@clearclause.demo</a> from the
-                address you registered with, and we will delete your account and any remaining
-                data associated with it. Account deletion is handled on request rather than
-                through an in-app control.
+                <strong>Your account:</strong> delete it yourself from{" "}
+                <Link href="/account">your account settings</Link>. This removes the account,
+                every document still held, and every report generated from them. It takes
+                effect immediately and cannot be undone.
               </li>
             </ul>
           ),
@@ -260,14 +261,39 @@ export default function PrivacyPolicy() {
                 to nominate another person to exercise these rights on your behalf.
               </p>
               <p>
-                To exercise any of these rights, email{" "}
-                <a href="mailto:privacy@clearclause.demo">privacy@clearclause.demo</a>. Deleting
-                documents requires no request at all — the control is in your workspace, and
-                automatic deletion runs regardless.
+                Access and erasure need no request: <Link href="/account">your account
+                settings</Link> will download everything we hold about you as a JSON file, and
+                delete your account and its data outright. Deleting individual documents is a
+                control in your workspace, and automatic deletion runs regardless.
+              </p>
+              <p>
+                For the remaining rights, or any concern about how your data is handled, email{" "}
+                <MailLink address={CONTACT.privacy} />.
               </p>
             </>
           ),
         },
+        // The DPDP Act requires publishing this contact. Rendered only once a real
+        // officer is appointed in lib/legal.ts — an invented name would be worse
+        // than none, because people would write to it.
+        ...(GRIEVANCE_OFFICER.name
+          ? [
+              {
+                id: "grievance",
+                title: "Grievance officer",
+                body: (
+                  <p>
+                    {ENTITY.name} is the Data Fiduciary for the personal data described in
+                    this policy. If a request under the rights above is not answered to
+                    your satisfaction, {GRIEVANCE_OFFICER.name} is our Grievance Officer
+                    and can be reached at{" "}
+                    <MailLink address={GRIEVANCE_OFFICER.email} />. If the matter is still
+                    unresolved, you may escalate it to the Data Protection Board of India.
+                  </p>
+                ),
+              },
+            ]
+          : []),
         {
           id: "children",
           title: "Children",
@@ -308,7 +334,7 @@ export default function PrivacyPolicy() {
           body: (
             <p>
               Privacy questions, requests, and complaints:{" "}
-              <a href="mailto:privacy@clearclause.demo">privacy@clearclause.demo</a>. If a
+              <MailLink address={CONTACT.privacy} />. If a
               concern is not resolved to your satisfaction, you may approach the Data Protection
               Board of India under the Digital Personal Data Protection Act, 2023. Other ways to
               reach us are listed on the <Link href="/legal/contact">Contact</Link> page.

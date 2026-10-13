@@ -89,6 +89,16 @@ export type ExplorerDoc = {
   recommendations: string[];
 };
 
+// Echoed back to prove same-site origin
+function csrfHeaders(method?: string): Record<string, string> {
+  if (!method || method.toUpperCase() === "GET") return {};
+  const token = document.cookie
+    .split("; ")
+    .find((c) => c.startsWith("cc_csrf="))
+    ?.split("=")[1];
+  return token ? { "X-CSRF-Token": decodeURIComponent(token) } : {};
+}
+
 // Deduplicate concurrent refreshes
 let _refreshing: Promise<boolean> | null = null;
 
@@ -97,6 +107,7 @@ async function _tryRefresh(): Promise<boolean> {
     const res = await fetch(`${BASE}/api/v1/auth/refresh`, {
       method: "POST",
       credentials: "include",
+      headers: csrfHeaders("POST"),
     });
     return res.ok;
   } catch {
@@ -108,7 +119,7 @@ async function req(path: string, opts: RequestInit = {}, _retried = false): Prom
   const res = await fetch(`${BASE}${path}`, {
     ...opts,
     credentials: "include",
-    headers: opts.headers as HeadersInit | undefined,
+    headers: { ...csrfHeaders(opts.method), ...(opts.headers as Record<string, string>) },
   });
 
   // Retry once after refresh; skip auth to avoid loops
@@ -158,11 +169,36 @@ export async function login(email: string, password: string): Promise<void> {
 }
 
 export async function logout(): Promise<void> {
-  await fetch(`${BASE}/api/v1/auth/logout`, { method: "POST", credentials: "include" });
+  await fetch(`${BASE}/api/v1/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+    headers: csrfHeaders("POST"),
+  });
 }
 
-export const listDocuments = async (): Promise<Doc[]> =>
-  (await req("/api/v1/documents")).json();
+const jsonPost = (path: string, body: unknown) =>
+  req(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+export const requestPasswordReset = (email: string) =>
+  jsonPost("/api/v1/auth/forgot-password", { email });
+
+export const resetPassword = (token: string, password: string) =>
+  jsonPost("/api/v1/auth/reset-password", { token, password });
+
+export const exportAccount = async (): Promise<unknown> =>
+  (await req("/api/v1/auth/me/export")).json();
+
+export const deleteAccount = (password: string) =>
+  jsonPost("/api/v1/auth/me/delete", { password });
+
+export const DOCUMENTS_PAGE_SIZE = 50;
+
+export const listDocuments = async (offset = 0): Promise<Doc[]> =>
+  (await req(`/api/v1/documents?limit=${DOCUMENTS_PAGE_SIZE}&offset=${offset}`)).json();
 
 export const getDocument = async (id: number): Promise<Doc> =>
   (await req(`/api/v1/documents/${id}`)).json();
@@ -176,8 +212,14 @@ export async function uploadDocument(file: File): Promise<Doc> {
 export const deleteDocument = (id: number) =>
   req(`/api/v1/documents/${id}`, { method: "DELETE" });
 
-export const analyzeDocument = async (id: number): Promise<{ status: string }> =>
-  (await req(`/api/v1/documents/${id}/analyze`, { method: "POST" })).json();
+// Top-level navigation sends the auth cookie
+// #page=N is the PDF viewer deep link
+export const documentFileUrl = (id: number, page?: number | null) =>
+  `${BASE}/api/v1/documents/${id}/file${page != null ? `#page=${page}` : ""}`;
+
+// Resets status so the caller poll resumes
+export const reprocessDocument = async (id: number): Promise<{ status: string }> =>
+  (await req(`/api/v1/documents/${id}/reprocess`, { method: "POST" })).json();
 
 export const fetchReportBlob = async (id: number): Promise<Blob> =>
   (await req(`/api/v1/documents/${id}/report`)).blob();
@@ -197,6 +239,21 @@ export async function askQuestion(id: number, question: string): Promise<QAAnswe
     body: JSON.stringify({ question }),
   });
   return res.json();
+}
+
+export type Classification = {
+  classified_type: string;
+  document_family: string | null;
+  confidence: number;
+  routing_action: "auto" | "confirm" | "manual";
+};
+
+export async function getClassification(id: number): Promise<Classification | null> {
+  try {
+    return await (await req(`/api/v1/documents/${id}/classification`)).json();
+  } catch {
+    return null;
+  }
 }
 
 export async function getExplorer(id: number): Promise<ExplorerDoc | null> {

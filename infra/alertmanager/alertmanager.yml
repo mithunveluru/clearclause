@@ -1,0 +1,35 @@
+# Where a firing rule goes. Without this file the rules in prometheus/alerts.yml
+# evaluate, turn red in the Prometheus UI, and reach nobody.
+#
+# Alertmanager does NOT expand environment variables, so the values below are
+# literal and must be edited before this is any use. Everything marked CHANGE ME
+# is a real address or credential.
+
+global:
+  # The same SMTP account the app sends password resets through
+  smtp_smarthost: "smtp.example.com:587"   # CHANGE ME
+  smtp_from: "ClearClause Alerts <alerts@example.com>"   # CHANGE ME
+  smtp_auth_username: "CHANGE ME"
+  smtp_auth_password: "CHANGE ME"
+
+route:
+  receiver: on-call
+  # One notification per alert name rather than per firing series
+  group_by: ["alertname"]
+  group_wait: 30s
+  group_interval: 5m
+  # Keep re-sending while it is still broken: an alert seen once at 03:00 and never
+  # again is an alert that gets slept through
+  repeat_interval: 4h
+
+  routes:
+    # severity: page means the product is doing the wrong thing right now
+    - matchers: ['severity = "page"']
+      receiver: on-call
+      repeat_interval: 1h
+
+receivers:
+  - name: on-call
+    email_configs:
+      - to: "you@example.com"   # CHANGE ME
+        send_resolved: true

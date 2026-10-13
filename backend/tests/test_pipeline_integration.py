@@ -30,9 +30,9 @@ def test_risky_document_full_pipeline():
     assert r["cost"]["late_fee"] == 500.0
 
     # report renders with the score and an action
-    html = r["html"]
-    assert f"{r['cats']['total']}/100" in html
-    assert "processing fee" in html.lower()
+    report = r["pdf_text"]
+    assert f"{r['cats']['total']}" in report
+    assert "processing fee" in report.lower()
 
 
 def test_clean_document_is_quiet():
