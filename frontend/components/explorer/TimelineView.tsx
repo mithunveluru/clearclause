@@ -63,7 +63,7 @@ export function TimelineView({ events }: { events: TimelineEvent[] }) {
                 <Icon className="h-[15px] w-[15px] text-white" strokeWidth={2} />
               </span>
 
-              <div className="flex-1 rounded-2xl border border-line bg-surface px-5 py-4">
+              <div className="flex-1 rounded-xl border border-line bg-surface px-5 py-4">
                 <div className="flex flex-wrap items-baseline gap-3">
                   <h3 className="font-semibold text-[1rem] tracking-tight">{e.label}</h3>
                   <span

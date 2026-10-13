@@ -11,7 +11,7 @@ function Highlighted({ hit }: { hit: SearchHit }) {
   return (
     <>
       {snippet.slice(0, matchStart)}
-      <mark className="rounded-[3px] bg-brand/15 px-0.5 text-ink">
+      <mark className="rounded-[3px] bg-ochre-soft px-0.5 shadow-[inset_0_-1px_0_theme(colors.ochre.DEFAULT)] text-ink">
         {snippet.slice(matchStart, matchStart + matchLength)}
       </mark>
       {snippet.slice(matchStart + matchLength)}
@@ -38,8 +38,8 @@ export function SearchView({
       </p>
 
       {hits.length === 0 ? (
-        <div className="flex flex-col items-center rounded-2xl border border-line bg-surface px-6 py-14 text-center">
-          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand/[0.07] text-brand">
+        <div className="flex flex-col items-center rounded-xl border border-line bg-surface px-6 py-14 text-center">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand/[0.07] text-brand">
             <SearchX className="h-5 w-5" strokeWidth={1.75} />
           </span>
           <p className="mt-4 text-[0.9375rem] font-medium text-ink">Nothing matched that</p>

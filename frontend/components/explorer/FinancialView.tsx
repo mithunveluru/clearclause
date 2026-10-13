@@ -14,7 +14,7 @@ function Table({ title, items }: { title: string; items: { label: string; value:
           <div
             key={i}
             className={`flex items-center justify-between px-4 py-3 text-[0.9375rem] ${
-              i % 2 === 0 ? "bg-surface" : "bg-canvas"
+              i % 2 === 0 ? "bg-surface" : "bg-sunken/60"
             }`}
           >
             <span className="text-ink-2">{item.label}</span>
@@ -41,7 +41,7 @@ export function FinancialView({ impact }: { impact: FinancialImpact }) {
       </p>
 
       {!hasData ? (
-        <p className="rounded-xl border border-line bg-canvas px-4 py-4 t-body text-ink-3">
+        <p className="rounded-xl border border-line bg-sunken/60 px-4 py-4 t-body text-ink-3">
           No financial terms were detected in this document.
         </p>
       ) : (
@@ -72,7 +72,7 @@ export function FinancialView({ impact }: { impact: FinancialImpact }) {
           )}
 
           {impact.total_note && (
-            <p className="mt-6 rounded-xl border border-line bg-canvas px-4 py-3 t-body text-ink-2">
+            <p className="mt-6 rounded-xl border border-line bg-sunken/60 px-4 py-3 t-body text-ink-2">
               {impact.total_note}
             </p>
           )}

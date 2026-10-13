@@ -41,7 +41,7 @@ function ExpandableCitation({ c }: { c: Citation }) {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="mt-1 block max-w-xs overflow-hidden rounded-md bg-canvas px-2.5 py-1.5 text-[0.75rem] italic leading-relaxed text-ink-2"
+            className="mt-1 block max-w-xs overflow-hidden rounded-md bg-sunken/60 px-2.5 py-1.5 text-[0.75rem] italic leading-relaxed text-ink-2"
           >
             {c.snippet}
           </m.span>
@@ -143,8 +143,8 @@ export function QuestionsView({
                   className={msg.role === "user" ? "text-right" : ""}
                 >
                   <div
-                    className={`inline-block max-w-[88%] rounded-2xl px-4 py-2.5 text-left text-[0.9375rem] leading-relaxed ${
-                      msg.role === "user" ? "bg-brand text-white" : "bg-canvas text-ink"
+                    className={`inline-block max-w-[88%] rounded-xl px-4 py-2.5 text-left text-[0.9375rem] leading-relaxed ${
+                      msg.role === "user" ? "bg-brand text-white" : "bg-sunken/60 text-ink"
                     }`}
                   >
                     {msg.content}
@@ -189,7 +189,7 @@ export function QuestionsView({
           </form>
         </>
       ) : (
-        <div className="flex items-center gap-3 rounded-xl border border-line bg-canvas px-4 py-4">
+        <div className="flex items-center gap-3 rounded-xl border border-line bg-sunken/60 px-4 py-4">
           <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-brand" />
           <p className="t-body text-ink-3">
             Generating embeddings — Q&amp;A turns on automatically in a few seconds.

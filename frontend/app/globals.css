@@ -12,7 +12,7 @@
     font-feature-settings: "cv02", "cv03", "cv04", "ss01";
   }
   ::selection {
-    background: rgba(79, 70, 229, 0.14);
+    background: rgba(195, 167, 121, 0.32);
   }
   /* Honor OS reduced-motion for CSS-driven animation (shimmer, pulse, transitions). */
   @media (prefers-reduced-motion: reduce) {
@@ -29,11 +29,15 @@
 
 @layer components {
   /* Typography scale — typography carries the design. */
+  /* Marketing only: the editorial serif. Working screens stay on the sans scale. */
   .t-display {
-    @apply text-[clamp(2.7rem,6vw,4.75rem)] font-semibold leading-[1.03] tracking-tighter;
+    @apply font-serif text-[clamp(2.6rem,6vw,4.5rem)] font-normal leading-[1.04] tracking-[-0.025em];
+  }
+  .t-display-2 {
+    @apply font-serif text-[clamp(1.9rem,3.6vw,2.75rem)] font-normal leading-[1.1] tracking-[-0.02em];
   }
   .t-headline {
-    @apply text-[clamp(1.75rem,3.5vw,2.5rem)] font-semibold leading-[1.1] tracking-tight;
+    @apply text-[clamp(1.5rem,2.6vw,1.875rem)] font-semibold leading-[1.15] tracking-tight;
   }
   .t-section {
     @apply text-[1.0625rem] font-semibold tracking-tight;
@@ -45,7 +49,7 @@
     @apply text-[0.8125rem] font-medium tracking-tight text-ink-3;
   }
   .eyebrow {
-    @apply text-[0.75rem] font-semibold uppercase tracking-[0.16em] text-brand;
+    @apply text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-brand;
   }
   .hairline {
     @apply border border-line;
@@ -54,7 +58,10 @@
     @apply rounded-2xl border border-line bg-surface shadow-soft;
   }
   .field {
-    @apply h-11 w-full rounded-xl border border-line bg-surface px-4 text-[0.9375rem] text-ink outline-none transition-[box-shadow,border-color] duration-200 placeholder:text-ink-3 focus:border-brand/50 focus:ring-4 focus:ring-brand/[0.12];
+    @apply h-11 w-full rounded-lg border border-line-strong bg-surface px-3.5 text-[0.9375rem] text-ink outline-none transition-[box-shadow,border-color] duration-150 placeholder:text-ink-3 focus:border-brand/60 focus:ring-4 focus:ring-brand/[0.12] aria-[invalid=true]:border-risk-high/60;
+  }
+  .label {
+    @apply mb-1.5 block text-[0.8125rem] font-medium text-ink;
   }
   /* Long-form legal/document prose. Authored pages stay clean; rhythm lives here. */
   .prose-legal {
@@ -84,21 +91,10 @@
     @apply border-b border-line py-2 pr-4 align-top;
   }
 
-  /* Subtle indigo aurora for hero surfaces; the drift is glacial on purpose and
-     is stopped by the global reduced-motion rule above. */
-  .aurora {
-    background:
-      radial-gradient(60% 80% at 15% 0%, rgba(99, 102, 241, 0.10), transparent 60%),
-      radial-gradient(50% 70% at 95% 10%, rgba(79, 70, 229, 0.08), transparent 55%);
-    background-size: 180% 180%;
-    animation: aurora-drift 30s ease-in-out infinite alternate;
-  }
-  @keyframes aurora-drift {
-    from {
-      background-position: 0% 0%;
-    }
-    to {
-      background-position: 100% 35%;
-    }
+  /* A ruled-paper wash for hero surfaces. Static: no motion behind reading text. */
+  .paper {
+    background-image:
+      linear-gradient(to bottom, rgba(250, 249, 246, 0) 0%, #faf9f6 92%),
+      repeating-linear-gradient(to bottom, transparent 0 31px, rgba(32, 35, 31, 0.045) 31px 32px);
   }
 }

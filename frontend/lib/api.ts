@@ -241,6 +241,21 @@ export async function askQuestion(id: number, question: string): Promise<QAAnswe
   return res.json();
 }
 
+export type Classification = {
+  classified_type: string;
+  document_family: string | null;
+  confidence: number;
+  routing_action: "auto" | "confirm" | "manual";
+};
+
+export async function getClassification(id: number): Promise<Classification | null> {
+  try {
+    return await (await req(`/api/v1/documents/${id}/classification`)).json();
+  } catch {
+    return null;
+  }
+}
+
 export async function getExplorer(id: number): Promise<ExplorerDoc | null> {
   try {
     return await (await req(`/api/v1/documents/${id}/explorer`)).json();

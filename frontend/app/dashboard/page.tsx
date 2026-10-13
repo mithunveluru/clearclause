@@ -1,48 +1,79 @@
 "use client";
 import { m } from "framer-motion";
-import { ChevronRight, FileSearch, Trash2 } from "lucide-react";
+import { ChevronRight, FileText, RotateCcw, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-import { deleteDocument, DOCUMENTS_PAGE_SIZE, listDocuments, logout, type Doc } from "@/lib/api";
-import { DocTypeBadge } from "@/components/DocTypeBadge";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { deleteDocument, DOCUMENTS_PAGE_SIZE, listDocuments, type Doc } from "@/lib/api";
+import { AppShell, PageHeader } from "@/components/AppShell";
 import UploadDropzone from "@/components/UploadDropzone";
 import { Button, ButtonLink } from "@/components/ui/Button";
-import { staggerContainer, staggerItem, easeSmooth } from "@/components/ui/motion";
+import { Notice } from "@/components/ui/Form";
+import { easeSmooth, staggerContainer, staggerItem } from "@/components/ui/motion";
 import { DocRowSkeleton } from "@/components/ui/Skeleton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { Container, Surface } from "@/components/ui/Surface";
-import { TopBar } from "@/components/ui/TopBar";
+import { docTypeLabel } from "@/lib/ui";
+
+const FILTERS = [
+  ["all", "All"],
+  ["ready", "Reviewed"],
+  ["active", "In progress"],
+  ["failed", "Failed"],
+] as const;
+type Filter = (typeof FILTERS)[number][0];
+
+const bucket = (s: string): Filter => (s === "report_ready" ? "ready" : s === "failed" ? "failed" : "active");
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 export default function Dashboard() {
   const router = useRouter();
   const [docs, setDocs] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadErr, setLoadErr] = useState("");
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [deleteErr, setDeleteErr] = useState("");
   // A full page back means there may be more
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
 
-  useEffect(() => { document.title = "Workspace — ClearClause"; }, []);
+  useEffect(() => { document.title = "Documents — ClearClause"; }, []);
 
+  // 401s are handled (refresh, then /login) inside api.ts; anything else is shown here
   const refresh = useCallback(() => {
+    setLoading(true);
+    setLoadErr("");
     listDocuments()
       .then((page) => {
         setDocs(page);
         setHasMore(page.length === DOCUMENTS_PAGE_SIZE);
       })
-      .catch(() => router.push("/login"))
+      .catch((e) => setLoadErr((e as Error).message))
       .finally(() => setLoading(false));
-  }, [router]);
+  }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  // Keep in-flight rows honest without a reload. Only the first page is re-read, so
+  // older pages loaded via "Load older" are merged rather than replaced.
+  const anyActive = docs.some((d) => bucket(d.status) === "active");
+  useEffect(() => {
+    if (!anyActive) return;
+    const id = setInterval(() => {
+      listDocuments()
+        .then((page) => {
+          const fresh = new Map(page.map((d) => [d.id, d]));
+          setDocs((prev) => prev.map((d) => fresh.get(d.id) ?? d));
+        })
+        .catch(() => {});
+    }, 5000);
+    return () => clearInterval(id);
+  }, [anyActive]);
 
   async function loadMore() {
     setLoadingMore(true);
@@ -57,158 +88,218 @@ export default function Dashboard() {
     }
   }
 
-  useEffect(() => { refresh(); }, [refresh]);
-
   async function handleDelete(id: number) {
     setDeleting(true);
+    setDeleteErr("");
     try {
       await deleteDocument(id);
       setDocs((prev) => prev.filter((d) => d.id !== id));
-    } catch { /* keep list intact on failure */ }
-    finally {
-      setDeleting(false);
       setConfirmDelete(null);
+    } catch (e) {
+      setDeleteErr((e as Error).message);
+    } finally {
+      setDeleting(false);
     }
   }
 
+  // ponytail: filters what's loaded, not the server; add a ?q= param when users pass one page
+  const shown = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return docs.filter(
+      (d) =>
+        (filter === "all" || bucket(d.status) === filter) &&
+        (!q || d.original_filename.toLowerCase().includes(q) || docTypeLabel(d.classified_type).toLowerCase().includes(q)),
+    );
+  }, [docs, query, filter]);
+
+  const counts = useMemo(() => {
+    const c: Record<Filter, number> = { all: docs.length, ready: 0, active: 0, failed: 0 };
+    docs.forEach((d) => c[bucket(d.status)]++);
+    return c;
+  }, [docs]);
+
+  const empty = !loading && !loadErr && docs.length === 0;
+
   return (
-    <>
-      <TopBar
-        right={
-          <>
-          <ButtonLink variant="ghost" href="/account">
-            Account
-          </ButtonLink>
-          <Button
-            variant="ghost"
-            onClick={async () => {
-              await logout();
-              router.push("/login");
-            }}
-          >
-            Log out
-          </Button>
-          </>
-        }
-      />
+    <AppShell crumbs={[{ label: "Documents" }]}>
+      <m.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25, ease: easeSmooth }}
+        className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10"
+      >
+        <PageHeader
+          title="Documents"
+          description="Add a loan, subscription, credit card, rental, sale agreement or patta document to review it."
+        />
 
-      <Container className="py-14">
-        <div className="mx-auto max-w-2xl">
-          <m.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, ease: easeSmooth }}
-          >
-            <p className="eyebrow">Workspace</p>
-            <h1 className="t-headline mt-2">Review a document</h1>
-            <p className="t-body mt-2.5">
-              Upload a loan or subscription agreement to check it for hidden risk.
-            </p>
+        <section aria-labelledby="upload-h" className="mt-8">
+          <h2 id="upload-h" className="sr-only">Analyze a document</h2>
+          <UploadDropzone onUploaded={(doc) => router.push(`/documents/${doc.id}`)} />
+          <p className="mt-2.5 text-[0.75rem] text-ink-3">
+            Files are deleted automatically seven days after upload.{" "}
+            <Link href="/legal/privacy" className="underline-offset-2 hover:text-ink hover:underline">How documents are handled</Link>
+          </p>
+        </section>
 
-            <div className="mt-9">
-              <UploadDropzone onUploaded={(doc) => router.push(`/documents/${doc.id}`)} />
-            </div>
-          </m.div>
-
-          <div className="mt-16">
-            <div className="mb-5 flex items-baseline justify-between">
-              <h2 className="t-section">Recent analyses</h2>
-              {docs.length > 0 && (
-                <span className="t-caption">
-                  {docs.length} document{docs.length === 1 ? "" : "s"}
-                </span>
-              )}
-            </div>
-
-            {loading ? (
-              <Surface className="divide-y divide-line overflow-hidden">
-                {[0, 1, 2].map((i) => <DocRowSkeleton key={i} />)}
-              </Surface>
-            ) : docs.length === 0 ? (
-              <Surface className="flex flex-col items-center px-6 py-16 text-center">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand/[0.07] text-brand">
-                  <FileSearch className="h-5 w-5" strokeWidth={1.75} />
-                </span>
-                <p className="mt-5 text-[0.9375rem] font-medium text-ink">No documents yet</p>
-                <p className="t-caption mt-1.5 max-w-xs">
-                  Upload your first agreement above and ClearClause will flag the risky clauses.
-                </p>
-              </Surface>
-            ) : (
-              <Surface className="divide-y divide-line overflow-hidden">
-                <m.div variants={staggerContainer} initial="initial" animate="animate">
-                  {docs.map((d) => (
-                    <m.div key={d.id} variants={staggerItem} className="group relative">
-                      {confirmDelete === d.id ? (
-                        <div className="flex items-center justify-between gap-4 px-6 py-[18px]">
-                          <p className="text-[0.9375rem] text-ink">
-                            Delete <span className="font-medium">{d.original_filename}</span>?
-                          </p>
-                          <div className="flex shrink-0 gap-2">
-                            <button
-                              onClick={() => setConfirmDelete(null)}
-                              className="rounded-lg border border-line px-3 py-1.5 text-[0.8125rem] font-medium text-ink-2 hover:bg-canvas"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              onClick={() => handleDelete(d.id)}
-                              disabled={deleting}
-                              className="rounded-lg bg-risk-high px-3 py-1.5 text-[0.8125rem] font-semibold text-white disabled:opacity-50 hover:opacity-90"
-                            >
-                              {deleting ? "Deleting…" : "Delete"}
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <Link
-                          href={`/documents/${d.id}`}
-                          className="flex items-center gap-4 px-6 py-[18px] transition-colors hover:bg-brand/[0.025] focus-visible:bg-brand/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand/30"
-                        >
-                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand/[0.06] text-brand">
-                            <FileSearch className="h-4 w-4" strokeWidth={1.75} />
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-[0.9375rem] font-medium text-ink">
-                              {d.original_filename}
-                            </p>
-                            <div className="mt-1 flex items-center gap-2">
-                              <p className="t-caption">{fmtDate(d.created_at)}</p>
-                              {d.classified_type && <DocTypeBadge type={d.classified_type} />}
-                            </div>
-                          </div>
-                          <StatusBadge status={d.status} />
-                          <ChevronRight
-                            className="h-4 w-4 text-ink-3 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-brand"
-                            strokeWidth={1.75}
-                          />
-                        </Link>
-                      )}
-                      {confirmDelete !== d.id && (
-                        <button
-                          onClick={(e) => { e.preventDefault(); setConfirmDelete(d.id); }}
-                          aria-label={`Delete ${d.original_filename}`}
-                          className="absolute right-12 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-ink-3 opacity-0 transition hover:bg-canvas hover:text-risk-high group-hover:opacity-100 focus-visible:opacity-100"
-                        >
-                          <Trash2 className="h-4 w-4" strokeWidth={1.75} />
-                        </button>
-                      )}
-                    </m.div>
-                  ))}
-                </m.div>
-              </Surface>
-            )}
-
-            {hasMore && (
-              <div className="mt-5 flex justify-center">
-                <Button variant="secondary" onClick={loadMore} disabled={loadingMore}>
-                  {loadingMore ? "Loading…" : "Load older documents"}
-                </Button>
-              </div>
+        <section aria-labelledby="library-h" className="mt-12">
+          <div className="flex items-baseline justify-between">
+            <h2 id="library-h" className="text-[1rem] font-semibold tracking-tight">Your documents</h2>
+            {docs.length > 0 && (
+              <span className="text-[0.8125rem] tabular-nums text-ink-3">
+                {docs.length}{hasMore ? "+" : ""} document{docs.length === 1 ? "" : "s"}
+              </span>
             )}
           </div>
-        </div>
-      </Container>
-    </>
+
+          {docs.length > 0 && (
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" strokeWidth={1.75} aria-hidden />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Filter by name or type"
+                  aria-label="Filter documents by name or type"
+                  className="field h-10 pl-9 text-[0.875rem]"
+                />
+              </div>
+              <div role="group" aria-label="Filter by status" className="flex gap-1 overflow-x-auto rounded-lg border border-line bg-sunken/60 p-1">
+                {FILTERS.map(([id, label]) => (
+                  <button
+                    key={id}
+                    onClick={() => setFilter(id)}
+                    aria-pressed={filter === id}
+                    className={`shrink-0 rounded-md px-2.5 py-1.5 text-[0.8125rem] font-medium transition-colors duration-150 ${
+                      filter === id ? "bg-surface text-ink shadow-xs" : "text-ink-2 hover:text-ink"
+                    }`}
+                  >
+                    {label} <span className="tabular-nums text-ink-3">{counts[id]}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="mt-4">
+            {loading ? (
+              <div className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface" aria-busy="true" aria-label="Loading documents">
+                {[0, 1, 2].map((i) => <DocRowSkeleton key={i} />)}
+              </div>
+            ) : loadErr ? (
+              <div className="rounded-xl border border-line bg-surface px-6 py-10 text-center">
+                <p className="text-[0.9375rem] font-medium">Your documents couldn&rsquo;t be loaded</p>
+                <p className="mt-1 text-[0.8125rem] text-ink-3">{loadErr}</p>
+                <Button variant="secondary" className="mt-5" onClick={refresh}>
+                  <RotateCcw className="h-4 w-4" strokeWidth={1.75} aria-hidden /> Try again
+                </Button>
+              </div>
+            ) : empty ? (
+              <div className="rounded-xl border border-line bg-surface px-6 py-14 text-center">
+                <svg viewBox="0 0 64 48" className="mx-auto h-12 w-16" aria-hidden fill="none">
+                  <rect x="10" y="4" width="34" height="40" rx="3" className="fill-sunken stroke-line-strong" />
+                  <rect x="20" y="8" width="34" height="40" rx="3" className="fill-surface stroke-line-strong" />
+                  <rect x="26" y="18" width="20" height="2" rx="1" className="fill-line-strong" />
+                  <rect x="26" y="24" width="20" height="2" rx="1" className="fill-ochre" />
+                  <rect x="26" y="30" width="13" height="2" rx="1" className="fill-line-strong" />
+                </svg>
+                <p className="mt-5 text-[0.9375rem] font-medium">No documents yet</p>
+                <p className="mx-auto mt-1.5 max-w-sm text-[0.875rem] leading-relaxed text-ink-2">
+                  Add your first document above. You&rsquo;ll see its type, the clauses worth
+                  questioning, and the wording behind each one.
+                </p>
+                <ButtonLink href="/sample" variant="ghost" className="mt-4">See a sample analysis first</ButtonLink>
+              </div>
+            ) : shown.length === 0 ? (
+              <div className="rounded-xl border border-line bg-surface px-6 py-10 text-center">
+                <p className="text-[0.9375rem] font-medium">No documents match</p>
+                <p className="mt-1 text-[0.8125rem] text-ink-3">
+                  Try a different name, or{" "}
+                  <button className="font-medium text-brand hover:underline" onClick={() => { setQuery(""); setFilter("all"); }}>
+                    clear filters
+                  </button>
+                  .{hasMore && " Only loaded documents are filtered."}
+                </p>
+              </div>
+            ) : (
+              <m.ul
+                variants={staggerContainer}
+                initial="initial"
+                animate="animate"
+                className="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface"
+              >
+                {shown.map((d) => (
+                  <m.li key={d.id} variants={staggerItem} className="group relative">
+                    {confirmDelete === d.id ? (
+                      <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                        <div className="min-w-0">
+                          <p className="text-[0.9375rem]">
+                            Delete <span className="break-all font-medium">{d.original_filename}</span>?
+                          </p>
+                          <p className="text-[0.8125rem] text-ink-3">The file, its findings and its report are removed.</p>
+                          {deleteErr && <p role="alert" className="mt-1 text-[0.8125rem] text-risk-high">{deleteErr}</p>}
+                        </div>
+                        <div className="flex shrink-0 gap-2">
+                          <Button variant="ghost" autoFocus onClick={() => { setConfirmDelete(null); setDeleteErr(""); }}>Cancel</Button>
+                          <Button variant="danger" onClick={() => handleDelete(d.id)} disabled={deleting}>
+                            {deleting ? "Deleting…" : "Delete"}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <Link
+                          href={`/documents/${d.id}`}
+                          className="flex items-center gap-3.5 py-3.5 pl-4 pr-24 transition-colors duration-150 hover:bg-sunken/50 focus-visible:bg-sunken/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand/30 sm:pl-5"
+                        >
+                          <FileText className="h-[18px] w-[18px] shrink-0 text-ink-3" strokeWidth={1.5} aria-hidden />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[0.9375rem] font-medium" title={d.original_filename}>{d.original_filename}</p>
+                            <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[0.8125rem] text-ink-3">
+                              <span>
+                                {!d.classified_type && bucket(d.status) === "active" ? "Identifying type…" : docTypeLabel(d.classified_type)}
+                              </span>
+                              <span aria-hidden>·</span>
+                              <time dateTime={d.created_at} className="tabular-nums">{fmtDate(d.created_at)}</time>
+                            </p>
+                          </div>
+                          <StatusBadge status={d.status} />
+                        </Link>
+                        <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-1">
+                          <button
+                            onClick={() => setConfirmDelete(d.id)}
+                            aria-label={`Delete ${d.original_filename}`}
+                            className="flex h-9 w-9 items-center justify-center rounded-md text-ink-3 opacity-100 transition hover:bg-surface hover:text-risk-high focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30 sm:opacity-0 sm:group-hover:opacity-100"
+                          >
+                            <Trash2 className="h-4 w-4" strokeWidth={1.75} />
+                          </button>
+                          <ChevronRight className="h-4 w-4 text-ink-3 transition-transform duration-150 group-hover:translate-x-0.5" strokeWidth={1.75} aria-hidden />
+                        </div>
+                      </>
+                    )}
+                  </m.li>
+                ))}
+              </m.ul>
+            )}
+          </div>
+
+          {hasMore && !loadErr && (
+            <div className="mt-5 flex justify-center">
+              <Button variant="secondary" onClick={loadMore} disabled={loadingMore}>
+                {loadingMore ? "Loading…" : "Load older documents"}
+              </Button>
+            </div>
+          )}
+          {!loading && docs.length > 0 && counts.failed > 0 && filter !== "failed" && (
+            <div className="mt-4">
+              <Notice>
+                {counts.failed} document{counts.failed === 1 ? "" : "s"} couldn&rsquo;t be analyzed. Open one to try again.
+              </Notice>
+            </div>
+          )}
+        </section>
+      </m.div>
+    </AppShell>
   );
 }
