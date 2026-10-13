@@ -49,7 +49,7 @@ def _readability(texts: list[str]) -> int:
     if not words:
         return 0
     avg = sum(words) / len(words)
-    return max(0, min(5, int((avg - 10) // 4)))  # ponytail: avg-words proxy; swap for Flesch if needed
+    return max(0, min(5, int((avg - 10) // 4)))  # average word count proxy, Flesch is the upgrade
 
 
 def band(total: int) -> str:

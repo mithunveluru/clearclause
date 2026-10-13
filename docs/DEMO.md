@@ -16,23 +16,27 @@ Open http://localhost:3000 and log in as **demo@example.com / supersecret1**.
 ## Walkthrough
 
 1. **Landing** — lead with trust: the value proposition, "what we check," how it works,
-   and the privacy/explainability promises. Click **View a sample report** to show the
+   and the privacy/explainability promises. Click **See a real analysis** to show the
    findings experience without uploading anything.
 
 2. **Upload (the centerpiece)** — from the workspace, drop a document (e.g. render any
    `sample-data/*.txt`, or use a real loan PDF). Note there is **no Analyze button** —
    analysis starts automatically and you're taken straight to the live processing view.
 
-3. **Processing experience** — watch the pipeline stages advance (Received → Extracting →
-   Reviewing → Report ready) with the cycling "document intelligence" lines. This is the
-   real OCR → segmentation → detection → scoring → report pipeline running on the worker.
+3. **Processing experience** — the stage list advances with the worker: Document received →
+   Reading the pages → Understanding it → Reviewing the clauses → Compiling your report.
+   Each step maps to a real pipeline status, so a slow document visibly sits on the stage
+   it is actually on. A failed run offers **Try again**, which re-runs the full analysis.
 
-4. **Results** — the risk meter (score + band), the plain-English summary, and the
-   **findings timeline**. Open a finding: *what was found · why it matters · where it
-   appears · recommended action*. Click **See where this appears** for the clause inspector.
+4. **Results** — the risk score and band, the plain-English summary, and the section nav.
+   Open a finding: *what it means · why it matters · recommended action*. Expand
+   **Exact wording** for the quoted clause, or **Open page N** to jump into the original
+   document at the cited page.
 
 5. **True cost & categories** — the side rail shows extracted fees and the estimated true
-   cost, plus the weighted category breakdown.
+   cost, plus the weighted category breakdown. Search the document from the sidebar —
+   "deposit" or "late fee" — to pull matches from clauses, figures, dates and questions
+   at once.
 
 6. **PDF report** — click **Download PDF report** for the purpose-built auditor-style PDF
    (cover, executive summary, clause analysis, cost impact, recommended actions, appendix).

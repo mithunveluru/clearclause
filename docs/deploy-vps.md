@@ -45,10 +45,17 @@ openssl rand -hex 16     # METRICS_TOKEN
 ```
 
 Fill in every blank. The app **refuses to start** with `ENV=production` if
-`JWT_SECRET` is still the default, `COOKIE_SECURE` is false, or any CORS origin is
-plaintext `http://`. That check lives in `Settings`, so it covers the API, the worker
-and migrations alike — a misconfigured deploy fails loudly at boot rather than
-quietly serving auth cookies over plain HTTP.
+`JWT_SECRET` is still the default, `COOKIE_SECURE` is false, any CORS origin is
+plaintext `http://`, `PUBLIC_APP_URL` is not `https://`, or `SMTP_HOST` is blank.
+That check lives in `Settings`, so it covers the API, the worker and migrations alike
+— a misconfigured deploy fails loudly at boot rather than quietly serving auth
+cookies over plain HTTP.
+
+`SMTP_HOST` is in that list because password reset is the only way a user who forgot
+their password gets back in, and a blank host makes the reset endpoint succeed while
+mailing nothing — a failure with no error to report. Any SMTP provider works (Resend,
+SES, Postmark, Mailgun); `PUBLIC_APP_URL` is what the reset links point at, so it must
+be the domain the user's browser actually sees.
 
 `TRUSTED_PROXY_DEPTH=1` matters: exactly one proxy (Caddy) sits in front. Set it to 0
 and every request appears to come from Caddy's IP, so one user's traffic rate-limits
@@ -132,16 +139,93 @@ database *first*, then the bucket, if you ever have to do both.
 
 ## 7. Monitoring
 
-- `/health` — liveness plus database connectivity. Point an uptime check at it.
+Monitoring only counts if it reaches a person who is not currently looking at a
+dashboard. Three layers do that, in descending order of how much they are worth:
+
+### Error reporting (set this up first)
+
+Set `SENTRY_DSN` in `.env.production`. Unhandled exceptions from the API and the
+worker then arrive with a stack trace, tagged by which one raised them. It is the only
+layer here that works without running the observability stack, and it is the one that
+catches the failures nobody wrote an alert rule for.
+
+`send_default_pii` is off, so usernames, cookies and request bodies stay out of the
+reports — this app handles loan agreements, and an error tracker is not somewhere any
+of that should end up. Leave `SENTRY_DSN` blank and the SDK never initializes.
+
+### Uptime
+
+Point an external check at `https://api.<your-domain>/health` every minute
+(UptimeRobot, BetterStack and Cronitor all have free tiers big enough). The route
+returns **503** if Postgres or Redis is unreachable, and its body names which one, so
+a plain status-code check is enough to page on.
+
+The check has to be external. A monitor running on the same box as the thing it
+watches goes down with it.
+
+> Note for the Render deployment: `healthCheckPath: /health` means Render now restarts
+> the service when a dependency is unreachable. That is usually what you want, but a
+> long Postgres outage will look like a restart loop rather than a steady 503.
+
+### Metrics and alert rules
+
 - `/internal/metrics` — Prometheus, behind `X-Metrics-Token: $METRICS_TOKEN`. Returns
   404 without it, so it does not advertise itself.
-- `infra/docker-compose.obs.yml` brings up Prometheus, Grafana, Loki and Tempo if you
-  want the full stack.
+- `infra/docker-compose.obs.yml` brings up Prometheus, Grafana, Loki, Tempo and
+  Alertmanager.
 
-Two log lines are worth alerting on, because both mean the system is quietly degraded
-rather than down:
+`infra/prometheus/alerts.yml` covers the states where the product returns 200s while
+doing the wrong thing — the rate limiter failing open, a spike of unreadable scans,
+analyzer runs failing, the API not being scraped at all.
 
-- `rate limiter unavailable` — Redis is gone; requests are being allowed through
-  **unlimited**. Brute-force protection is off until it returns.
-- `low OCR confidence` — a document was too poor to read reliably. The user is warned
-  in the UI, but a spike means something upstream is wrong.
+**Those rules deliver nothing until you edit `infra/alertmanager/alertmanager.yml`.**
+It ships with placeholder addresses and credentials; fill in the SMTP account (the
+same one the app sends password resets through works) and the address to notify.
+Verify it with:
+
+```bash
+docker compose -f docker-compose.yml -f infra/docker-compose.obs.yml \
+  exec alertmanager amtool check-config /etc/alertmanager/alertmanager.yml
+```
+
+Then confirm delivery end to end by firing a fake alert — an alert path you have never
+seen work is not a monitored system:
+
+```bash
+docker compose -f docker-compose.yml -f infra/docker-compose.obs.yml \
+  exec alertmanager amtool alert add test severity=page \
+  --alertmanager.url=http://localhost:9093
+```
+
+## 8. Before you accept a real user
+
+Everything above gets the service running. These are the things that are *not*
+verifiable by any test in this repo, because they are facts about you rather than
+properties of the code — and all of them are visible to the person who has just handed
+you their loan agreement.
+
+**Legal identity.** `frontend/lib/legal.ts` is the only file to edit; the pages import
+from it and `lib/legal.test.ts` fails if one ever hardcodes an address again.
+
+- [ ] `ENTITY.name` — the name on the certificate of incorporation, not the product
+      name. It is published as the Data Fiduciary.
+- [ ] `CONTACT.*` — four real, monitored inboxes. `usesPlaceholderContacts()` returns
+      true while any still ends in `clearclause.demo`.
+- [ ] `GRIEVANCE_OFFICER` — the DPDP Act requires publishing this. The privacy page
+      hides the section while the name is empty, so an unappointed officer is absent
+      rather than invented. Filling in the name is what publishes it.
+
+**Operational.**
+
+- [ ] `SENTRY_DSN` set, and one deliberate exception confirmed to arrive.
+- [ ] `infra/alertmanager/alertmanager.yml` filled in, and a test alert delivered
+      end to end (§7). An alert path you have never seen work is not monitoring.
+- [ ] An external uptime check against `/health`, from somewhere that is not this box.
+- [ ] `SMTP_*` set, and a password reset actually completed against a real inbox.
+- [ ] A database restore rehearsed (§6), not merely a dump taken.
+
+**Accuracy.** `backend/tests/fixtures/ocr_corpus/` is empty, so
+`scripts/ocr_accuracy.py` currently measures nothing. Add 20–30 real documents with
+hand-checked transcripts, across all six analyzer types, and record the resulting word
+error rate before making any accuracy claim in public. The in-repo tests measure
+rendered text, which is a floor: they catch a broken engine, not a bad scan.

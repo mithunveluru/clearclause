@@ -22,6 +22,9 @@ storage/reports/*
 !storage/uploads/.gitkeep
 !storage/reports/.gitkeep
 
+# OCR accuracy corpus: real documents, kept local
+backend/tests/fixtures/ocr_corpus/
+
 # Misc
 .DS_Store
 

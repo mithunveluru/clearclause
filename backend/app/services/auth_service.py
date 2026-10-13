@@ -1,14 +1,30 @@
+import jwt
 from fastapi import HTTPException, status
 
 from app.core import lockout
+from app.core.config import settings
 from app.core.security import (
     create_access_token,
     create_refresh_token,
+    create_reset_token,
+    decode_reset_token,
     hash_password,
+    reset_token_subject,
     verify_password,
 )
 from app.repositories.user_repo import UserRepository
 from app.schemas.auth import TokenResponse
+
+RESET_SUBJECT = "Reset your ClearClause password"
+RESET_BODY = """\
+Someone asked to reset the password for this ClearClause account.
+
+Open this link within 30 minutes to choose a new one:
+
+{link}
+
+If that wasn't you, ignore this email — your password has not changed.
+"""
 
 
 class AuthService:
@@ -46,6 +62,44 @@ class AuthService:
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Unknown user"
             )
         return self._issue_tokens(user_id)
+
+    async def request_password_reset(self, email: str) -> None:
+        """Mail a reset link, if the address belongs to an account.
+
+        Returns the same way either way: answering differently for a registered and
+        an unregistered address turns this endpoint into an account enumerator.
+        """
+        user = await self.users.get_by_email(email)
+        if user is None:
+            return
+        token = create_reset_token(user.id, user.password_hash)
+        link = f"{settings.PUBLIC_APP_URL}/reset-password?token={token}"
+        # Imported here: the API process should not pull in the worker at module load
+        from app.worker.tasks import send_email
+
+        send_email.delay(user.email, RESET_SUBJECT, RESET_BODY.format(link=link))
+
+    async def reset_password(self, token: str, new_password: str) -> None:
+        """Set a new password from a reset token, or 400 if the link is no good.
+
+        One error for every failure mode — expired, forged, already used, unknown
+        user — because the differences are only useful to someone guessing.
+        """
+        invalid = HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This reset link is invalid or has expired. Request a new one.",
+        )
+        try:
+            user = await self.users.get_by_id(reset_token_subject(token))
+            if user is None:
+                raise invalid
+            decode_reset_token(token, user.password_hash)
+        except (jwt.PyJWTError, KeyError, ValueError):
+            raise invalid
+
+        await self.users.set_password(user, hash_password(new_password))
+        # The lockout is keyed to failed guesses at the password that just changed
+        await lockout.clear(user.email)
 
     @staticmethod
     def _issue_tokens(user_id: int) -> TokenResponse:

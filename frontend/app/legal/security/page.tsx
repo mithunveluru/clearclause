@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalDoc } from "@/components/legal/LegalDoc";
+import { CONTACT } from "@/lib/legal";
+import { MailLink } from "@/components/legal/MailLink";
 
 export const metadata: Metadata = {
   title: "Security — ClearClause",
@@ -114,7 +116,7 @@ export default function SecurityPage() {
             <>
               <p>
                 If you believe you have found a security vulnerability in ClearClause, email{" "}
-                <a href="mailto:security@clearclause.demo">security@clearclause.demo</a> with
+                <MailLink address={CONTACT.security} /> with
                 enough detail to reproduce it. We will acknowledge good-faith reports, will not
                 pursue researchers legally for responsible testing, and will credit reporters who
                 wish to be named once a fix ships.

@@ -1,7 +1,7 @@
 "use client";
 import {
   AlertTriangle, BookOpen, Calendar, CheckCircle, Compass, DollarSign, Eye,
-  HelpCircle, Map, MessageSquare, RotateCcw, Shield,
+  HelpCircle, Map, MessageSquare, RotateCcw, Search, Shield,
 } from "lucide-react";
 import { bandMeta, severityMeta } from "@/lib/ui";
 import type { ExplorerDoc, ExplorerSection } from "@/lib/api";
@@ -33,6 +33,8 @@ export function ExplorerNav({
   mode,
   onMode,
   onWalkthrough,
+  query,
+  onQuery,
 }: {
   explorer: ExplorerDoc;
   active: string;
@@ -40,15 +42,35 @@ export function ExplorerNav({
   mode: ReadingMode;
   onMode: (m: ReadingMode) => void;
   onWalkthrough: () => void;
+  /** Omitted by the sample explorer, which has no search. */
+  query?: string;
+  onQuery?: (q: string) => void;
 }) {
   const band = explorer.risk_band;
   const bm = band ? bandMeta(band) : null;
 
   return (
     <nav className="flex flex-col gap-1 py-6">
+      {onQuery && (
+        <div className="relative mb-5">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3"
+            strokeWidth={1.75}
+            aria-hidden
+          />
+          <input
+            type="search"
+            value={query ?? ""}
+            onChange={(e) => onQuery(e.target.value)}
+            placeholder="Search this document"
+            aria-label="Search this document"
+            className="field h-10 pl-9 text-[0.875rem]"
+          />
+        </div>
+      )}
       {bm && band && (
         <div
-          className="mb-5 rounded-2xl px-4 py-3.5"
+          className="mb-5 rounded-xl px-4 py-3.5"
           style={{ backgroundColor: bm.tint, border: `1px solid ${bm.color}26` }}
         >
           <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.08em]" style={{ color: bm.color }}>
@@ -77,7 +99,7 @@ export function ExplorerNav({
       <p className="mb-1.5 px-3 text-[0.6875rem] font-semibold uppercase tracking-[0.09em] text-ink-3">
         Reading Mode
       </p>
-      <div className="mb-4 grid grid-cols-2 gap-1 rounded-xl bg-canvas p-1">
+      <div className="mb-4 grid grid-cols-2 gap-1 rounded-xl bg-sunken/60 p-1">
         {MODE_OPTIONS.map(({ id, label }) => (
           <button
             key={id}
@@ -123,7 +145,7 @@ export function ExplorerNav({
           className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[0.875rem] transition text-left ${
             active === id
               ? "bg-brand/[0.08] font-semibold text-brand"
-              : "text-ink-2 hover:bg-canvas hover:text-ink"
+              : "text-ink-2 hover:bg-sunken hover:text-ink"
           }`}
         >
           <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
@@ -152,7 +174,7 @@ function SectionNavItem({
       className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[0.875rem] transition text-left ${
         active
           ? "bg-brand/[0.08] font-semibold text-brand"
-          : "text-ink-2 hover:bg-canvas hover:text-ink"
+          : "text-ink-2 hover:bg-sunken hover:text-ink"
       }`}
     >
       <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />

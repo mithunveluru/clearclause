@@ -166,6 +166,39 @@ def test_bad_scan_keeps_the_page_as_found(monkeypatch):
     assert angle == 0, "an unreadable page should not be rotated on a guess"
 
 
+def test_a_rotation_must_be_readable_not_merely_better(monkeypatch):
+    # A repayment schedule is mostly numbers: legitimately few function words.
+    # Noise that scores 3 must not beat real text that scores 2.
+    from PIL import Image
+
+    def fake(image, **kwargs):
+        upright = image.size == (100, 50)
+        return _fake_read("of the 1200 4500 7800" if upright else "in a of 3300", 85.0)
+
+    monkeypatch.setattr("app.ocr.tesseract.pytesseract.image_to_data", fake)
+
+    blocks, angle = TesseractOCRProvider()._read_page(Image.new("RGB", (100, 50), "white"), 1)
+
+    assert angle == 0, "an illegible page was rotated on a 3-vs-2 function word guess"
+    assert "1200" in " ".join(b["text"] for b in blocks)
+
+
+def test_other_script_page_is_reread_in_the_fallback_language(monkeypatch):
+    # Tamil pattas read as low-confidence Latin noise under the English model
+    from PIL import Image
+
+    def fake(image, config="", **kwargs):
+        if "tam" in config:
+            return _fake_read("patta land record chennai", 91.0)
+        return _fake_read(_NONSENSE, 24.0)
+
+    monkeypatch.setattr("app.ocr.tesseract.pytesseract.image_to_data", fake)
+
+    blocks, _ = TesseractOCRProvider()._read_page(Image.new("RGB", (100, 50), "white"), 1)
+
+    assert "patta" in " ".join(b["text"] for b in blocks), "fallback alphabet was never tried"
+
+
 def test_rotation_is_reused_across_pages(monkeypatch):
     # Pages share an orientation; only the first searches
     from PIL import Image
@@ -182,3 +215,52 @@ def test_rotation_is_reused_across_pages(monkeypatch):
 
     assert angle == 90
     assert len(passes) == 1, "the hint should have been tried first and accepted"
+
+
+def _capture_config(monkeypatch) -> list[str]:
+    """Record the tesseract config string each read is issued with."""
+    seen: list[str] = []
+
+    def fake(image, config="", **kwargs):
+        seen.append(config)
+        return _fake_read("the loan of and to be", 90.0)
+
+    monkeypatch.setattr("app.ocr.tesseract.pytesseract.image_to_data", fake)
+    return seen
+
+
+def test_no_resolution_is_claimed_for_an_image_that_declares_none(monkeypatch):
+    # Asserting 300dpi on an upload nearer 100 tripled word error on the same file:
+    # the claimed resolution is how Tesseract decides what point size it is reading.
+    from PIL import Image
+
+    seen = _capture_config(monkeypatch)
+    TesseractOCRProvider()._read_page(Image.new("RGB", (600, 200), "white"), 1, dpi=None)
+
+    assert seen, "no read was issued"
+    assert all("--dpi" not in c for c in seen), f"a resolution was invented: {seen}"
+
+
+def test_a_known_resolution_is_passed_through(monkeypatch):
+    # Rasterized PDF pages: we chose the resolution, so Tesseract should be told
+    from PIL import Image
+
+    seen = _capture_config(monkeypatch)
+    TesseractOCRProvider()._read_page(Image.new("RGB", (600, 200), "white"), 1, dpi=200)
+
+    assert all("--dpi 200" in c for c in seen), f"the real resolution was withheld: {seen}"
+
+
+def test_declared_dpi_is_read_from_the_file_only():
+    from PIL import Image
+
+    from app.ocr.tesseract import _declared_dpi
+
+    assert _declared_dpi(Image.new("RGB", (10, 10))) is None
+    with_dpi = Image.new("RGB", (10, 10))
+    with_dpi.info["dpi"] = (150.0, 150.0)
+    assert _declared_dpi(with_dpi) == 150
+    # A zero is a malformed header, not a resolution
+    zeroed = Image.new("RGB", (10, 10))
+    zeroed.info["dpi"] = (0, 0)
+    assert _declared_dpi(zeroed) is None

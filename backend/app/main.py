@@ -3,9 +3,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.api.deps import get_current_user
+from app.core import csrf
 from app.api.health import router as health_router
 from app.api.v1.analysis import router as analysis_router
 from app.api.v1.auth import router as auth_router
@@ -65,12 +67,24 @@ async def add_security_headers(request: Request, call_next) -> Response:
     return response
 
 
+@app.middleware("http")
+async def csrf_guard(request: Request, call_next) -> Response:
+    # Only cross-site cookies need this; SameSite=Lax already withholds the cookie
+    if settings.COOKIE_SAMESITE == "none" and request.url.path.startswith("/api/"):
+        try:
+            csrf.enforce(request)
+        except HTTPException as exc:
+            return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
+    return await call_next(request)
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
+    allow_origin_regex=settings.CORS_ORIGIN_REGEX or None,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Cookie", "X-Request-ID"],
+    allow_headers=["Content-Type", "Cookie", "X-Request-ID", csrf.HEADER],
 )
 
 app.include_router(health_router)

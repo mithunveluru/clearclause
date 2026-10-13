@@ -16,6 +16,12 @@ class CostOut(BaseModel):
     renewal_fee: float | None
     foreclosure_charge: float | None
     estimated_true_cost: float | None
+    # "inr" | "percent" | null. Null means the document stated neither, so the
+    # number must not be rendered with a unit anyone could mistake for the truth.
+    processing_fee_unit: str | None = None
+    late_fee_unit: str | None = None
+    renewal_fee_unit: str | None = None
+    foreclosure_charge_unit: str | None = None
 
 
 class ScoreOut(BaseModel):

@@ -46,12 +46,25 @@ services:
       - prometheus-data:/prometheus
     ports:
       - "9090:9090"
+    depends_on:
+      - alertmanager
+
+  # Delivers what prometheus/alerts.yml detects. Edit infra/alertmanager/alertmanager.yml
+  # first — it ships with placeholder addresses and will not mail anyone as it stands.
+  alertmanager:
+    image: prom/alertmanager:v0.28.0
+    volumes:
+      - ./infra/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    ports:
+      - "9093:9093"
 
   grafana:
     image: grafana/grafana:11.4.0
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      # Required, not defaulted: admin/admin was reachable on any exposed host
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD}
     volumes:
       - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
@@ -64,6 +77,7 @@ services:
       - loki
 
 volumes:
+  alertmanager-data:
   tempo-data:
   loki-data:
   prometheus-data:

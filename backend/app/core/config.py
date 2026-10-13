@@ -22,14 +22,35 @@ class Settings(BaseSettings):
     S3_REGION: str = ""
     OCR_PROVIDER: str = "auto"  # auto = PDF text layer first, OCR only scanned pages
     OCR_LOW_CONFIDENCE: int = 60  # below this mean OCR confidence, warn the user (0-100)
+    # Retried only on pages English could not read; patta and sale deeds are often Tamil.
+    # Needs the matching tesseract-ocr-<lang> package; blank disables the retry.
+    OCR_FALLBACK_LANGS: str = "eng+tam"
     OTEL_EXPORTER_OTLP_ENDPOINT: str = ""
+    # Unhandled exceptions go here. Blank disables reporting entirely.
+    SENTRY_DSN: str = ""
     MAX_UPLOAD_MB: int = 10
     MAX_PDF_PAGES: int = 50   # a 10MB PDF can hold thousands of pages; OCR memory scales with them
     FILE_RETENTION_DAYS: int = 7
+    # Documents one account may upload per calendar month; 0 disables the cap. OCR is
+    # CPU-bound, so this is the ceiling on what a single account can cost.
+    MONTHLY_UPLOAD_LIMIT: int = 20
     CORS_ORIGINS: str = "http://localhost:3000"  # comma-separated
+    CORS_ORIGIN_REGEX: str = ""       # Vercel previews get a new hostname per commit
+    # Password reset links are built against this; it is what the user's browser sees
+    PUBLIC_APP_URL: str = "http://localhost:3000"
+
+    # Transactional email. Blank host logs the message instead of sending it, which
+    # is what dev and CI want — and what production must not do, hence the invariant.
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = "ClearClause <noreply@localhost>"
 
     ENV: str = "development"          # set to "production" in prod deployments
     COOKIE_SECURE: bool = False       # set True when serving over HTTPS
+    # none when frontend and API are different sites
+    COOKIE_SAMESITE: str = "lax"      # lax | none
     TRUSTED_PROXY_DEPTH: int = 0      # 1 for nginx/Traefik, 0 for direct
     METRICS_TOKEN: str = ""           # non-empty enables /internal/metrics with token auth
 
@@ -42,6 +63,17 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str = ""
     JINA_API_KEY: str = ""
     QDRANT_URL: str = "http://qdrant:6333"
+
+    @model_validator(mode="after")
+    def _normalize_database_url(self) -> "Settings":
+        """Managed Postgres (Render, Heroku, …) hands out a driverless URL."""
+        url = self.DATABASE_URL
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql://", 1)
+        if url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        object.__setattr__(self, "DATABASE_URL", url)
+        return self
 
     @model_validator(mode="after")
     def _enforce_production_invariants(self) -> "Settings":
@@ -58,8 +90,25 @@ class Settings(BaseSettings):
             problems.append("COOKIE_SECURE must be true (auth cookies need the Secure flag)")
         if any(o.startswith("http://") for o in self.cors_origins_list):
             problems.append("CORS_ORIGINS contains a plaintext http:// origin")
+        if not self.PUBLIC_APP_URL.startswith("https://"):
+            problems.append("PUBLIC_APP_URL must be an https:// URL (reset links use it)")
+        if not self.SMTP_HOST:
+            # Without it, password reset silently succeeds and mails nothing
+            problems.append("SMTP_HOST is required (password reset cannot work without it)")
         if problems:
             raise ValueError("Refusing to start in production: " + "; ".join(problems))
+        return self
+
+    @model_validator(mode="after")
+    def _enforce_cookie_invariants(self) -> "Settings":
+        """Browsers silently drop a SameSite=None cookie that is not Secure."""
+        problems = []
+        if self.COOKIE_SAMESITE not in ("lax", "none"):
+            problems.append(f"COOKIE_SAMESITE must be lax or none, got {self.COOKIE_SAMESITE!r}")
+        if self.COOKIE_SAMESITE == "none" and not self.COOKIE_SECURE:
+            problems.append("COOKIE_SAMESITE=none requires COOKIE_SECURE=true")
+        if problems:
+            raise ValueError("Refusing to start: " + "; ".join(problems))
         return self
 
     @property

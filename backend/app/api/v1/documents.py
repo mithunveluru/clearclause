@@ -1,7 +1,11 @@
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+import mimetypes
+
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
+from app.core import quota
 from app.core.config import settings
 from app.core.ratelimit import rate_limit
 from app.db.session import get_db
@@ -29,6 +33,8 @@ async def upload(
     user: User = Depends(get_current_user),
     svc: DocumentService = Depends(_service),
 ):
+    # Before reading the body: no point spending bandwidth on an upload we will refuse
+    await quota.enforce(user.id)
     max_bytes = settings.MAX_UPLOAD_MB * 1024 * 1024
     content = await file.read(max_bytes + 1)  # bounded read
     if len(content) > max_bytes:
@@ -39,16 +45,20 @@ async def upload(
     if not content:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty file")
     doc = await svc.upload(user.id, file.filename or "upload", content)
+    await quota.record(user.id)  # only now: a rejected file must not cost the user
     dispatch(doc.id, user.id)
     return doc
 
 
 @router.get("", response_model=list[DocumentOut])
 async def list_documents(
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
     user: User = Depends(get_current_user),
     svc: DocumentService = Depends(_service),
 ):
-    return await svc.list_documents(user.id)
+    """Newest first. Bounded so one heavy account cannot return every row."""
+    return await svc.list_documents(user.id, limit=limit, offset=offset)
 
 
 @router.get("/{doc_id}", response_model=DocumentOut)
@@ -58,6 +68,36 @@ async def get_document(
     svc: DocumentService = Depends(_service),
 ):
     return await svc.get(doc_id, user.id)
+
+
+@router.get("/{doc_id}/file")
+async def get_file(
+    doc_id: int,
+    user: User = Depends(get_current_user),
+    svc: DocumentService = Depends(_service),
+):
+    """Serve the uploaded document itself, so a finding can cite evidence the user can see.
+
+    Inline, because the point is to open it at the cited page (`#page=N`) rather than
+    download it. Safe to render: uploads are magic-byte checked (`files.detect_source_type`)
+    and every response carries `X-Content-Type-Options: nosniff`, so a file claiming to be a
+    PDF cannot be served as HTML.
+    """
+    doc = await svc.get(doc_id, user.id)
+
+    # Ownership checked above; the URL is short-lived
+    url = svc.store.signed_url(doc.file_path)
+    if url:
+        return RedirectResponse(url, status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+
+    media_type = mimetypes.guess_type(doc.file_path)[0] or "application/octet-stream"
+    with svc.store.local_path(doc.file_path) as path:
+        return FileResponse(
+            path,
+            media_type=media_type,
+            filename=doc.original_filename,
+            content_disposition_type="inline",
+        )
 
 
 @router.delete("/{doc_id}", status_code=status.HTTP_204_NO_CONTENT)

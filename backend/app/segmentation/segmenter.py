@@ -24,6 +24,17 @@ CLAUSE_KEYWORDS: "OrderedDict[str, tuple[str, ...]]" = OrderedDict(
 _NON_PRINTABLE = re.compile(r"[^\x09\x0a\x0d\x20-\x7e]")
 _REPEAT_PUNCT = re.compile(r"([.,;:!?])\1+")
 _SENTENCE_SPLIT = re.compile(r"(?<=[.;])\s+")
+
+# Periods that abbreviate rather than terminate. This text is full of them, and the
+# costly one is "Rs.": splitting there severed "A late payment charge of Rs." from
+# "500 per month", so the clause describing the fee no longer contained its figure and
+# the fee was reported as having no amount at all.
+_ABBREVIATIONS = frozenset(
+    """
+    rs inr no nos mr mrs ms m/s dr ltd pvt co inc etc viz vs v sec cl art sch ann
+    sr jr st rd approx min max fig para cap ref addl asst govt dept
+    """.split()
+)
 _BULLET = re.compile(r"^\s*(?:[-*•·]|\(?[a-z0-9]{1,2}[).])\s+", re.IGNORECASE)
 _MIN_CLAUSE_LEN = 8
 
@@ -52,9 +63,32 @@ def is_heading(text: str) -> bool:
     return upper_ratio > 0.7 or text.endswith(":")
 
 
+def _ends_a_sentence(before: str) -> bool:
+    """Whether the punctuation ending this half terminates a sentence.
+
+    Only the word before it is consulted. Requiring a capital after it as well read
+    "a processing fee of 2 percent; a late payment charge of Rs. 500" as one sentence,
+    so the processing fee was reported as Rs 500 — the merge costs the same
+    misattribution the split was supposed to prevent. A semicolon never abbreviates,
+    and "Rs." is caught by the word before it without help.
+    """
+    word = before.rsplit(maxsplit=1)[-1].rstrip(".;").lower() if before.split() else ""
+    return not (word in _ABBREVIATIONS or len(word) == 1)  # "Rs. 500", "A. Kumar"
+
+
+def split_sentences(text: str) -> list[str]:
+    parts, start = [], 0
+    for match in _SENTENCE_SPLIT.finditer(text):
+        if _ends_a_sentence(text[start : match.start()]):
+            parts.append(text[start : match.start()])
+            start = match.end()
+    parts.append(text[start:])
+    return parts
+
+
 def split_clauses(text: str) -> list[str]:
     clauses = []
-    for part in _SENTENCE_SPLIT.split(text):
+    for part in split_sentences(text):
         part = _BULLET.sub("", part).strip()
         if len(part) >= _MIN_CLAUSE_LEN:
             clauses.append(part)

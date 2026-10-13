@@ -22,7 +22,7 @@ _FUNCTION_WORDS = frozenset(
 )
 _LEGIBLE_FUNCTION_WORDS = 4
 
-# ponytail: English-only; swap for a language detector if needed
+# English only, add language detection if needed
 
 
 class _Read:
@@ -41,6 +41,13 @@ class _Read:
         return self.function_words >= _LEGIBLE_FUNCTION_WORDS
 
 
+def _declared_dpi(image: Image.Image) -> int | None:
+    """The resolution the file claims, or None. Never a guess — a guess is the bug."""
+    dpi = image.info.get("dpi")
+    value = int(dpi[0]) if isinstance(dpi, (tuple, list)) and dpi else None
+    return value if value and value > 0 else None
+
+
 class TesseractOCRProvider(OCRProvider):
     """CPU-only OCR via Tesseract, rasterizing PDFs page by page.
 
@@ -48,6 +55,9 @@ class TesseractOCRProvider(OCRProvider):
     "rotate 180" at confidence 2.4 on upright pages and corrupted them.
     """
 
+    # Rasterization resolution for PDFs only. 200 reads 4pt type at zero word error
+    # (scripts/ocr_accuracy.py), so the fine print this product exists to read is
+    # already well inside its range; 300 and 400 measure identically and cost memory.
     def __init__(self, dpi: int = 200):
         self.dpi = dpi
 
@@ -60,7 +70,8 @@ class TesseractOCRProvider(OCRProvider):
         for image in convert_from_path(
             file_path, dpi=self.dpi, first_page=page_number, last_page=page_number
         ):
-            blocks.extend(self._read_page(image, page_number, hint)[0])
+            # We rasterized it, so we know its resolution
+            blocks.extend(self._read_page(image, page_number, hint, dpi=self.dpi)[0])
             image.close()
         return blocks
 
@@ -76,44 +87,91 @@ class TesseractOCRProvider(OCRProvider):
                 for image in convert_from_path(
                     file_path, dpi=self.dpi, first_page=page_number, last_page=page_number
                 ):
-                    page_blocks, hint = self._read_page(image, page_number, hint)
+                    page_blocks, hint = self._read_page(image, page_number, hint, self.dpi)
                     blocks.extend(page_blocks)
                     image.close()
         else:
             with Image.open(file_path) as image:
-                blocks, _ = self._read_page(image, 1, hint)
+                # An upload's resolution is whatever produced it; only the file knows
+                blocks, _ = self._read_page(image, 1, hint, _declared_dpi(image))
         return blocks
 
     def _read_page(
-        self, image: Image.Image, page_number: int, hint: int = 0
+        self, image: Image.Image, page_number: int, hint: int = 0, dpi: int | None = None
     ) -> tuple[list[dict], int]:
-        """Blocks for this page, plus the rotation that produced them."""
-        base = self._read(image, page_number, hint)
+        """Blocks for this page, plus the rotation that produced them.
+
+        dpi is the image's *actual* resolution, or None when nothing states it. It is
+        not this provider's rasterization setting: telling Tesseract an uploaded scan
+        is 300dpi when it is nearer 100 tripled the word error rate on the same file,
+        because the claimed resolution is how it decides what point size it is reading.
+        """
+        base = self._read(image, page_number, hint, dpi=dpi)
         if base.legible:
             return base.blocks, hint
 
-        # A rotation must out-read the page as found
+        # A rotation must be readable, not merely score better: on a page of numbers
+        # (a repayment schedule) noise at 90 degrees out-counts real text at 0, and the
+        # wrong angle then becomes the hint for every page after it.
         best_angle, best = hint, base
         for angle in (a for a in _ANGLES if a != hint):
-            read = self._read(image, page_number, angle)
-            if read.function_words > best.function_words:
+            read = self._read(image, page_number, angle, dpi=dpi)
+            if read.legible and read.function_words > best.function_words:
                 best_angle, best = angle, read
-            if read.legible:
                 break
 
         if best_angle != hint:
             logger.info("page %d read %d degrees rotated", page_number, best_angle)
+        else:
+            # Illegible at every angle — English may just be the wrong alphabet
+            best = self._other_script(image, page_number, best_angle, best, dpi)
         if not best.blocks:
             # Bad scan, not an empty page
             logger.warning("page %d produced no usable text", page_number)
         return best.blocks, best_angle
 
-    def _read(self, image: Image.Image, page_number: int, angle: int) -> _Read:
+    def _other_script(
+        self, image: Image.Image, page_number: int, angle: int, best: _Read,
+        dpi: int | None = None,
+    ) -> _Read:
+        """Re-read an English-illegible page in the fallback alphabets.
+
+        Function words cannot judge this read — a correct Tamil page scores zero of
+        them — so confidence decides instead: the English model on Tamil script emits
+        low-confidence Latin noise, the Tamil model reads the same pixels cleanly.
+        """
+        if not settings.OCR_FALLBACK_LANGS:
+            return best
+        # ponytail: retried at the settled angle only. A scan both rotated and
+        # non-English needs the full 4x2 search; add it when one turns up.
+        try:
+            read = self._read(
+                image, page_number, angle, langs=settings.OCR_FALLBACK_LANGS, dpi=dpi
+            )
+        except pytesseract.TesseractError:
+            # A missing language pack must not fail the document
+            logger.warning("fallback languages %s unavailable", settings.OCR_FALLBACK_LANGS)
+            return best
+        if read.confidence <= best.confidence:
+            return best
+        logger.info("page %d read as %s", page_number, settings.OCR_FALLBACK_LANGS)
+        return read
+
+    def _read(
+        self,
+        image: Image.Image,
+        page_number: int,
+        angle: int,
+        langs: str = "eng",
+        dpi: int | None = None,
+    ) -> _Read:
         rotated = image.rotate(angle, expand=True, fillcolor="white") if angle else image
         try:
-            # Without the real dpi, confidences are meaningless
+            # Only assert a resolution we actually know; a wrong one reads worse than
+            # none, and Tesseract estimates for itself when not told
+            config = f"-l {langs}" + (f" --dpi {dpi}" if dpi else "")
             data = pytesseract.image_to_data(
-                rotated, output_type=Output.DICT, config=f"--dpi {self.dpi}"
+                rotated, output_type=Output.DICT, config=config
             )
         finally:
             if rotated is not image:

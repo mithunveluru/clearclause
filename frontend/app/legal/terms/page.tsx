@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LegalDoc } from "@/components/legal/LegalDoc";
+import { CONTACT } from "@/lib/legal";
+import { MailLink } from "@/components/legal/MailLink";
 
 export const metadata: Metadata = {
   title: "Terms of Service — ClearClause",
@@ -294,7 +296,7 @@ export default function TermsOfService() {
           body: (
             <p>
               Questions about these terms:{" "}
-              <a href="mailto:support@clearclause.demo">support@clearclause.demo</a>. Other ways
+              <MailLink address={CONTACT.support} />. Other ways
               to reach us are on the <Link href="/legal/contact">Contact</Link> page.
             </p>
           ),

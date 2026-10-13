@@ -31,7 +31,7 @@ def _paragraphs(lines: list[dict]) -> list[list[dict]]:
     A break is a vertical gap large relative to line height — not relative to the
     other gaps, since a lone gap can never look like an outlier among its peers.
 
-    ponytail: gap heuristic; a layout-aware parser is the upgrade for multi-column.
+    Gap heuristic; a layout-aware parser handles multi-column.
     """
     if len(lines) <= 1:
         return [lines] if lines else []

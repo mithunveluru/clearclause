@@ -1,5 +1,7 @@
 "use client";
 import { m } from "framer-motion";
+import { AlertTriangle } from "lucide-react";
+import { viewTransition } from "@/components/ui/motion";
 import type { FinancialImpact } from "@/lib/api";
 
 function Table({ title, items }: { title: string; items: { label: string; value: string }[] }) {
@@ -12,7 +14,7 @@ function Table({ title, items }: { title: string; items: { label: string; value:
           <div
             key={i}
             className={`flex items-center justify-between px-4 py-3 text-[0.9375rem] ${
-              i % 2 === 0 ? "bg-surface" : "bg-canvas"
+              i % 2 === 0 ? "bg-surface" : "bg-sunken/60"
             }`}
           >
             <span className="text-ink-2">{item.label}</span>
@@ -32,14 +34,14 @@ export function FinancialView({ impact }: { impact: FinancialImpact }) {
     impact.hidden_risks.length > 0;
 
   return (
-    <m.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+    <m.div {...viewTransition}>
       <h2 className="mb-1 text-[1.375rem] font-semibold tracking-tight">Financial Impact</h2>
       <p className="mb-6 t-body text-ink-2">
         All monetary terms extracted from the document, grouped by type.
       </p>
 
       {!hasData ? (
-        <p className="rounded-xl border border-line bg-canvas px-4 py-4 t-body text-ink-3">
+        <p className="rounded-xl border border-line bg-sunken/60 px-4 py-4 t-body text-ink-3">
           No financial terms were detected in this document.
         </p>
       ) : (
@@ -55,9 +57,13 @@ export function FinancialView({ impact }: { impact: FinancialImpact }) {
                 {impact.hidden_risks.map((r, i) => (
                   <li
                     key={i}
-                    className="flex items-start gap-2.5 rounded-xl border border-[#b91c1c]/20 bg-[#fef2f2] px-4 py-3 text-[0.9375rem] leading-relaxed"
+                    className="flex items-start gap-2.5 rounded-xl border border-risk-high/20 bg-risk-high-tint px-4 py-3 text-[0.9375rem] leading-relaxed"
                   >
-                    <span className="shrink-0 mt-0.5 text-[#b91c1c]">⚠</span>
+                    <AlertTriangle
+                      className="mt-0.5 h-4 w-4 shrink-0 text-risk-high"
+                      strokeWidth={2}
+                      aria-hidden
+                    />
                     {r}
                   </li>
                 ))}
@@ -66,7 +72,7 @@ export function FinancialView({ impact }: { impact: FinancialImpact }) {
           )}
 
           {impact.total_note && (
-            <p className="mt-6 rounded-xl border border-line bg-canvas px-4 py-3 t-body text-ink-2">
+            <p className="mt-6 rounded-xl border border-line bg-sunken/60 px-4 py-3 t-body text-ink-2">
               {impact.total_note}
             </p>
           )}

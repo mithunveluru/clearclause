@@ -1,7 +1,9 @@
 "use client";
 import { m } from "framer-motion";
+import { viewTransition, easeSmooth } from "@/components/ui/motion";
 import { Calendar, Clock, DollarSign, ShieldCheck, AlertCircle } from "lucide-react";
 import type { TimelineEvent } from "@/lib/api";
+import { BRAND, NEUTRAL, RISK } from "@/lib/ui";
 
 const EVENT_ICON: Record<string, React.ElementType> = {
   payment: DollarSign,
@@ -13,12 +15,12 @@ const EVENT_ICON: Record<string, React.ElementType> = {
 };
 
 const EVENT_COLOR: Record<string, string> = {
-  payment: "#b45309",
-  period: "#4f46e5",
-  deadline: "#b91c1c",
-  obligation: "#6b7280",
-  rights: "#15803d",
-  recurring: "#b45309",
+  payment: RISK.medium.color,
+  period: BRAND,
+  deadline: RISK.high.color,
+  obligation: NEUTRAL,
+  rights: RISK.low.color,
+  recurring: RISK.medium.color,
 };
 
 export function TimelineView({ events }: { events: TimelineEvent[] }) {
@@ -37,11 +39,7 @@ export function TimelineView({ events }: { events: TimelineEvent[] }) {
   );
 
   return (
-    <m.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-    >
+    <m.div {...viewTransition}>
       <h2 className="mb-1 text-[1.375rem] font-semibold tracking-tight">Timeline</h2>
       <p className="mb-8 t-body text-ink-2">Key dates, periods, and financial events extracted from the document.</p>
 
@@ -49,13 +47,13 @@ export function TimelineView({ events }: { events: TimelineEvent[] }) {
         <span className="absolute left-[17px] top-4 bottom-4 w-px bg-line" aria-hidden />
         {sorted.map((e, i) => {
           const Icon = EVENT_ICON[e.event_type] ?? Calendar;
-          const color = EVENT_COLOR[e.event_type] ?? "#6b7280";
+          const color = EVENT_COLOR[e.event_type] ?? NEUTRAL;
           return (
             <m.li
               key={i}
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ delay: i * 0.05, duration: 0.3, ease: easeSmooth }}
               className="relative flex gap-5 pb-7 pl-10 last:pb-0"
             >
               <span
@@ -65,7 +63,7 @@ export function TimelineView({ events }: { events: TimelineEvent[] }) {
                 <Icon className="h-[15px] w-[15px] text-white" strokeWidth={2} />
               </span>
 
-              <div className="flex-1 rounded-2xl border border-line bg-surface px-5 py-4">
+              <div className="flex-1 rounded-xl border border-line bg-surface px-5 py-4">
                 <div className="flex flex-wrap items-baseline gap-3">
                   <h3 className="font-semibold text-[1rem] tracking-tight">{e.label}</h3>
                   <span

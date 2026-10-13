@@ -1,8 +1,10 @@
 "use client";
-import { m } from "framer-motion";
-import { BookOpen, FileText, Lightbulb, MessageSquare } from "lucide-react";
-import { issueLabel, severityMeta } from "@/lib/ui";
-import type { ExplorerClause } from "@/lib/api";
+import { AnimatePresence, m } from "framer-motion";
+import { easeSmooth } from "@/components/ui/motion";
+import { BookOpen, ChevronRight, ExternalLink, Lightbulb, MessageSquare } from "lucide-react";
+import { useState } from "react";
+import { confidenceColor, issueLabel, severityMeta } from "@/lib/ui";
+import { documentFileUrl, type ExplorerClause } from "@/lib/api";
 
 export type ReadingMode = "consumer" | "professional" | "negotiation" | "financial";
 
@@ -21,14 +23,92 @@ const NEGOTIATION_TIPS: Record<string, string> = {
   service_fee: "Ask whether this fee is waived for online processing or for customers above a certain value.",
 };
 
+/** The wording a finding rests on, plus a way into the document itself.
+ *
+ * Present in every reading mode: this used to be visible only in Professional, which hid
+ * the evidence from exactly the readers least able to take a finding on faith. */
+function Evidence({
+  clause,
+  docId,
+  defaultOpen,
+}: {
+  clause: ExplorerClause;
+  docId?: number;
+  defaultOpen: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const page = clause.page_number;
+  const quote = clause.original_text;
+  if (!quote && page == null) return null;
+
+  return (
+    <div className="mt-4 border-t border-line pt-3">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+        {quote && (
+          <button
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            className="-ml-1 inline-flex items-center gap-1 rounded-md px-1 py-0.5 text-[0.8125rem] font-medium text-ink-2 transition hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+          >
+            <ChevronRight
+              className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-90" : ""}`}
+              strokeWidth={2}
+              aria-hidden
+            />
+            Exact wording{page != null ? ` · page ${page}` : ""}
+          </button>
+        )}
+
+        {docId != null && (
+          <a
+            href={documentFileUrl(docId, page)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 rounded-md px-1 py-0.5 text-[0.8125rem] font-medium text-ink-2 transition hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/30"
+          >
+            <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
+            {page != null ? `Open page ${page}` : "Open document"}
+            <span className="sr-only"> (opens in a new tab)</span>
+          </a>
+        )}
+
+        {!quote && docId == null && page != null && (
+          <span className="t-caption">Source: page {page}</span>
+        )}
+      </div>
+
+      <AnimatePresence initial={false}>
+        {open && quote && (
+          <m.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.22, ease: easeSmooth }}
+            className="overflow-hidden"
+          >
+            <figure className="mt-2.5 border-l-2 border-ochre bg-[#fdfcfa] px-4 py-3">
+              <figcaption className="text-[0.6875rem] font-medium uppercase tracking-[0.12em] text-ink-3">
+                From the document{page != null ? ` · page ${page}` : ""}
+              </figcaption>
+              <blockquote className="mt-1.5 font-serif text-[0.9375rem] leading-relaxed text-ink">{quote}</blockquote>
+            </figure>
+          </m.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export function ClauseCard({
   clause,
   mode,
   index,
+  docId,
 }: {
   clause: ExplorerClause;
   mode: ReadingMode;
   index: number;
+  docId?: number;
 }) {
   const sev = severityMeta(clause.risk_level);
   const label = issueLabel(clause.issue_type);
@@ -38,8 +118,8 @@ export function ClauseCard({
     <m.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay: Math.min(index * 0.06, 0.3), ease: [0.22, 1, 0.36, 1] }}
-      className="rounded-2xl border border-line bg-surface p-6 shadow-xs"
+      transition={{ duration: 0.35, delay: Math.min(index * 0.06, 0.3), ease: easeSmooth }}
+      className="rounded-xl border border-line bg-surface p-6 shadow-xs"
     >
       <div className="mb-4 flex flex-wrap items-center gap-2.5">
         <span
@@ -55,27 +135,17 @@ export function ClauseCard({
         </span>
         <span className="ml-auto flex items-center gap-1.5">
           <span className="t-caption">{Math.round(clause.confidence * 100)}%</span>
-          <span className="w-14 h-1.5 rounded-full bg-canvas overflow-hidden" title={`${Math.round(clause.confidence * 100)}% confidence`}>
+          <span className="w-14 h-1.5 rounded-full bg-sunken/60 overflow-hidden" title={`${Math.round(clause.confidence * 100)}% confidence`}>
             <span
               className="block h-full rounded-full"
               style={{
                 width: `${Math.round(clause.confidence * 100)}%`,
-                backgroundColor: clause.confidence >= 0.8 ? "#15803d" : clause.confidence >= 0.6 ? "#b45309" : "#b91c1c",
+                backgroundColor: confidenceColor(clause.confidence),
               }}
             />
           </span>
         </span>
       </div>
-
-      {mode === "professional" && clause.original_text && (
-        <div className="mb-4 rounded-xl border-l-2 border-brand/30 bg-brand/[0.03] px-4 py-3">
-          <p className="mb-1 text-[0.6875rem] font-medium uppercase tracking-wider text-ink-3">
-            <FileText className="mr-1 inline h-3 w-3" />
-            Original clause{clause.page_number != null ? ` · page ${clause.page_number}` : ""}
-          </p>
-          <p className="text-[0.875rem] italic leading-relaxed text-ink-2">{clause.original_text}</p>
-        </div>
-      )}
 
       {(mode === "consumer" || mode === "professional" || mode === "financial") && (
         <div className="mb-3">
@@ -98,7 +168,7 @@ export function ClauseCard({
 
       {mode === "negotiation" ? (
         <>
-          <div className="mb-3 rounded-xl border border-line bg-canvas px-4 py-3">
+          <div className="mb-3 rounded-xl border border-line bg-sunken/60 px-4 py-3">
             <p className="mb-1 flex items-center gap-1 text-[0.6875rem] font-medium uppercase tracking-wider text-ink-3">
               <MessageSquare className="h-3 w-3" />
               What to ask
@@ -120,7 +190,7 @@ export function ClauseCard({
           )}
         </>
       ) : (
-        <div className="mt-4 rounded-xl border border-line bg-canvas px-4 py-3">
+        <div className="mt-4 rounded-xl border border-line bg-sunken/60 px-4 py-3">
           <p className="mb-1 text-[0.6875rem] font-medium uppercase tracking-wider text-ink-3">
             Recommended action
           </p>
@@ -128,12 +198,13 @@ export function ClauseCard({
         </div>
       )}
 
-      {clause.page_number != null && mode !== "professional" && (
-        <p className="mt-3 flex items-center gap-1.5 text-[0.8125rem] text-ink-3">
-          <FileText className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden />
-          Source: page {clause.page_number}
-        </p>
-      )}
+      {/* Remounts on mode change so Professional reopens the quote it used to show inline */}
+      <Evidence
+        key={mode}
+        clause={clause}
+        docId={docId}
+        defaultOpen={mode === "professional"}
+      />
     </m.div>
   );
 }
